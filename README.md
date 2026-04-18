@@ -63,6 +63,27 @@ Flags:
 
 If `--tools` is omitted, doccraft detects installed tools by scanning for `.claude/` or `.cursor/`. When neither is present, doccraft falls back to installing into every supported tool.
 
+## Dogfooding
+
+doccraft uses its own skills on itself. After cloning, install them locally:
+
+```bash
+pnpm install
+pnpm run dev:cli -- init . --skip-openspec --tools claude,cursor
+```
+
+This scaffolds `docs/` (committed — real project content), installs the four
+skills into `.claude/skills/` and `.cursor/skills/` (gitignored — derivable
+from `templates/`), and ships Cursor rule stubs to `.cursor/rules/`. Rerun
+the same command after touching `templates/` to refresh the local install.
+
+Planning artifacts live in [`docs/`](docs/): ADRs capture the design
+decisions behind the install pipeline, the deferred config layer, and the
+Cursor-only rule-stub approach. Stories in [`docs/stories/`](docs/stories/)
+track the outstanding follow-ups, with priorities in
+[`docs/queue.md`](docs/queue.md) and the full backlog in
+[`docs/backlog.md`](docs/backlog.md).
+
 ## Development
 
 ```bash
