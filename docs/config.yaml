@@ -1,71 +1,79 @@
-# doccraft configuration
+# doccraft configuration — tailored for doccraft itself (the dogfood).
 #
-# This file is **yours** — doccraft never overwrites it. Every skill installed
-# by doccraft reads values from here at invocation time; any key you omit
-# falls back to the built-in default in the skill body. Deleting this file
-# entirely makes every skill use its defaults.
+# This file is owned by the project, not by doccraft. `doccraft update`
+# never overwrites it. Every installed skill reads values here at
+# invocation time; any key you omit falls back to the in-skill default.
+# Deleting this file makes every skill use its defaults.
 #
-# Adding to a list (e.g. story.areas) teaches the matching skill a new valid
-# value without touching its SKILL.md. That's the point — your vocabulary
-# survives `doccraft update`.
+# For a fresh project, the starter values live in `templates/docs/
+# config.yaml` in the doccraft package. Edits below reflect choices
+# specific to the doccraft repo.
 
 story:
-  # Tag vocabulary. Stories in docs/stories/ use prefixed tags
-  # (area:/slice:/theme:); these lists name the valid values under each
-  # prefix for this project.
-  areas: [api, cli, auth, data, infra, schemas]
-  slices: [ui, admin, onboarding]
-  themes: [observability, performance, security, docs, testing]
+  # Subsystem tags, aligned with the conventional-commit scopes used
+  # in this repo (`feat(cli):`, `feat(skills):`, `docs(scope):` …).
+  areas:
+    - cli        # Commander-wired command surface (init, update, --tools)
+    - skills     # skill templates and install pipeline
+    - rules      # Cursor rule stubs (.mdc)
+    - config     # docs/config.yaml layer + skill-side consumers
+    - openspec   # @fission-ai/openspec subprocess bridge
+    - scaffold   # docs/ scaffolding (templates/docs/ → docs/)
+
+  # doccraft is a CLI tool; no user-facing product slices.
+  slices: []
+
+  # Themes that recur in this project's stories. `install` appears in
+  # P1.2; `docs` and `testing` in several others. `ux` for CLI UX work
+  # (prompt picker, stale-cursor advisory messaging, and similar).
+  themes:
+    - docs
+    - testing
+    - install
+    - ux
 
   id:
-    # Filename tier prefixes (e.g. `p0-` / `p1-` in p0-payment-retry.md).
-    # Empty list = no tier prefix convention.
+    # doccraft uses p0–p4 consistently.
     tiers: [p0, p1, p2, p3, p4]
-    # Regex for valid story `id:` values in YAML frontmatter. Accepts both
-    # P-tier ordinals ("P0.3") and kebab-case slugs ("story-2026-001",
-    # "spike-foo") by default.
+    # Accepts both P-tier ordinals ("P1.2") and kebab-case slugs for
+    # spikes. doccraft has used P-tier exclusively so far, but the
+    # pattern stays permissive in case a spike story lands later.
     pattern: '^(P\d+(\.\d+)?|[a-z][a-z0-9-]+)$'
 
 adr:
-  # ADR directory, relative to project root.
   path: docs/adr
 
 queue:
-  # Working queue file.
   path: docs/queue.md
-  # Heading text for the two tables `doccraft-queue-audit` reads. Rename
-  # here if your project uses different headings — the skill will find
-  # tables by heading text, not position.
   tables:
     suggestedOrder: Suggested order
     platformSpikes: Platform spikes
 
 backlog:
-  # Full backlog file.
   path: docs/backlog.md
 
 queueAudit:
-  # Priority order for the lane heuristic in `doccraft-queue-audit`'s
-  # parallel-waves pass. First match wins when assigning a story to a
-  # lane. Set to [slice, area] if your project groups work primarily by
-  # product surface rather than subsystem.
+  # doccraft stories use `area:` tags almost exclusively; `slice:` falls
+  # back only because `slices: []` means the lane heuristic never finds
+  # a slice tag. Concrete effect: lane = first `area:*` tag, or `misc`
+  # when none is set.
   laneFrom: [area, slice]
 
-  # Scale thresholds. When an audit would touch more story files than
-  # `maxStoryFiles` or reorder more than `maxQueueReorderPct` percent of
-  # the suggested-order table, the skill stops and asks for confirmation
-  # before applying. Raise these for larger projects; lower for stricter
-  # containment.
+  # Low thresholds for a small project. An audit that would touch more
+  # than 5 story files or reorder more than half the Suggested order
+  # table pauses for confirmation — intentional containment for a repo
+  # that currently has fewer than 10 stories total.
   scale:
     maxStoryFiles: 5
     maxQueueReorderPct: 50
 
 sessionWrap:
-  # Which capture categories `doccraft-session-wrap` considers in scope.
-  # Set a category to `false` if your project does not track that kind
-  # of doc — session-wrap will skip the row entirely rather than
-  # propose a new folder.
+  # doccraft does not maintain `docs/research/`, `docs/reference/`, or
+  # `docs/business/` trees. Disable these capture categories so
+  # `doccraft-session-wrap` doesn't propose creating folders this
+  # project has deliberately chosen not to use. If/when one becomes
+  # useful, flip the relevant flag and the skill will surface it.
   capture:
-    research: true
-    reference: true
+    research: false
+    reference: false
     business: false
