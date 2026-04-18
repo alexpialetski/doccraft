@@ -1,0 +1,77 @@
+{
+  "name": "doccraft",
+  "version": "0.0.0",
+  "description": "Documentation and project-story skills for Claude Code and Cursor, layered on OpenSpec",
+  "keywords": [
+    "doccraft",
+    "docs",
+    "skills",
+    "claude-code",
+    "cursor",
+    "openspec",
+    "cli"
+  ],
+  "homepage": "https://github.com/alexpialetski/doccraft",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/alexpialetski/doccraft"
+  },
+  "license": "MIT",
+  "author": "Aliaksei Pialetski",
+  "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "bin": {
+    "doccraft": "./bin/doccraft.js"
+  },
+  "files": [
+    "dist",
+    "bin",
+    "templates",
+    "!dist/**/*.test.js",
+    "!dist/**/__tests__",
+    "!dist/**/*.map"
+  ],
+  "scripts": {
+    "build": "node build.js",
+    "dev": "tsc --watch",
+    "dev:cli": "pnpm build && node bin/doccraft.js",
+    "lint": "eslint src/",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prepare": "pnpm run build",
+    "prepublishOnly": "pnpm run build",
+    "release": "pnpm run release:ci",
+    "release:ci": "pnpm exec changeset publish",
+    "changeset": "changeset"
+  },
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "packageManager": "pnpm@10.33.0",
+  "devDependencies": {
+    "@changesets/changelog-github": "^0.5.2",
+    "@changesets/cli": "^2.27.7",
+    "@commitlint/cli": "^19.5.0",
+    "@commitlint/config-conventional": "^19.5.0",
+    "@types/node": "^22.9.0",
+    "eslint": "^9.14.0",
+    "typescript": "^5.6.3",
+    "typescript-eslint": "^8.14.0",
+    "vitest": "^3.2.4"
+  },
+  "dependencies": {
+    "@fission-ai/openspec": "^1.3.0",
+    "chalk": "^5.3.0",
+    "commander": "^14.0.0",
+    "ora": "^8.1.1"
+  }
+}
