@@ -19,7 +19,8 @@ rules and the Story-files coverage invariant.
 
 | ID | Item | Status |
 |----|------|--------|
-| P1.1 | Spike: does Cursor discover `.claude/skills/` out of the box? If yes, ship `--consolidate` flag | planned |
+| P1.1 | Spike: does Cursor discover `.claude/skills/` out of the box? If yes, ship `--consolidate` flag | done |
+| P1.2 | Ship `--consolidate` install flag for dual-tool projects (per ADR 005) | planned |
 
 ### P2 — backlog (known valuable, not scheduled)
 
@@ -49,6 +50,7 @@ Detailed acceptance criteria for the items above. Queue rows in
 |----|-------|
 | P0.1 | [Externalize project vocabulary to docs/config.yaml](stories/p0-docs-config-externalization.md) |
 | P1.1 | [Spike — Cursor discovery of .claude/skills/](stories/p1-cursor-consolidation-spike.md) |
+| P1.2 | [Ship --consolidate install flag](stories/p1-consolidate-install-flag.md) |
 | P2.1 | [Parallel-waves split watch](stories/p2-parallel-waves-split-watch.md) |
 | P2.2 | [Docs-maintenance skill family](stories/p2-docs-maintenance-skills.md) |
 
