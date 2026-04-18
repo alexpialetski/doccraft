@@ -18,11 +18,17 @@ Stories use YAML frontmatter per the `doccraft-story` skill: `impact` (H/M/L),
 
 | # | Item | Story |
 |---|------|-------|
-| 1 | Spike — Cursor discovery of `.claude/skills/` | [P1.1](stories/p1-cursor-consolidation-spike.md) |
+| 1 | Ship `--consolidate` install flag for dual-tool projects | [P1.2](stories/p1-consolidate-install-flag.md) |
 
-**Note:** P0.1 (externalize project vocabulary to `docs/config.yaml`) is
-**done** — see [story](stories/p0-docs-config-externalization.md) and
-[ADR 004](adr/004-docs-config-schema.md).
+**Recently shipped:**
+
+- P0.1 — externalize project vocabulary to `docs/config.yaml`. See
+  [story](stories/p0-docs-config-externalization.md) and
+  [ADR 004](adr/004-docs-config-schema.md).
+- P1.1 — Cursor `.claude/skills/` discovery spike. See
+  [story](stories/p1-cursor-consolidation-spike.md) and
+  [ADR 005](adr/005-consolidate-skills-for-dual-tool.md). Implementation
+  follow-up tracked as P1.2 above.
 
 ## Platform spikes (can run in parallel)
 
