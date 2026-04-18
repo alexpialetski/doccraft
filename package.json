@@ -1,6 +1,6 @@
 {
   "name": "doccraft",
-  "version": "0.1.0",
+  "version": "0.1.8",
   "description": "Documentation and project-story skills for Claude Code and Cursor, layered on OpenSpec",
   "keywords": [
     "doccraft",
@@ -14,7 +14,7 @@
   "homepage": "https://github.com/alexpialetski/doccraft",
   "repository": {
     "type": "git",
-    "url": "https://github.com/alexpialetski/doccraft"
+    "url": "git+https://github.com/alexpialetski/doccraft.git"
   },
   "license": "MIT",
   "author": "Aliaksei Pialetski",
@@ -29,7 +29,7 @@
     }
   },
   "bin": {
-    "doccraft": "./bin/doccraft.js"
+    "doccraft": "bin/doccraft.js"
   },
   "files": [
     "dist",
