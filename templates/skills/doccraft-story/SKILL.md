@@ -18,8 +18,8 @@ description: >-
 - Updating status, acceptance criteria, tags, or `openspec` on an existing story.
 - When closing a story: consider updating `docs/queue.md` and the **Status**
   column in `docs/backlog.md`. After **adding** a story or changing
-  **`depends_on`**, run the `doccraft-queue-audit` skill if installed, to
-  reconcile the queue graph.
+  **`depends_on`**, invoke the `doccraft-queue-audit` skill in the same
+  turn to reconcile the queue graph.
 
 ## File location and naming
 
@@ -151,6 +151,6 @@ OpenSpec recommended because: touches schema + payment service + integration tes
   shipped or explicitly abandoned (note why in body if abandoned).
 - When reprioritising, consider updating `docs/queue.md` in the same commit
   as meaningful story status changes.
-- After creating a story or changing `depends_on`, run the
-  `doccraft-queue-audit` skill if installed so the working queue stays
+- After creating a story or changing `depends_on`, invoke
+  `doccraft-queue-audit` in the same turn so the working queue stays
   consistent with the dependency graph.
