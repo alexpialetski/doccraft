@@ -73,6 +73,10 @@ Releases are automated via [Changesets](https://github.com/changesets/changesets
 
 Conventional commit format is enforced on PRs by commitlint.
 
+## Changelog
+
+See [CHANGELOG.md](./CHANGELOG.md) for a full release history.
+
 ## License
 
 [MIT](./LICENSE)
