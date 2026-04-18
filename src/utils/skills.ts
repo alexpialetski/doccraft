@@ -57,8 +57,8 @@ export interface RuleTemplate {
  */
 export const MANAGED_HEADER =
   '> Managed by **doccraft** — `doccraft update` regenerates this file. ' +
-  'Local edits will be overwritten; project-specific vocabulary will move ' +
-  'to `docs/config.yaml` in a planned follow-up change.\n\n';
+  'Local edits will be overwritten. See `docs/config.yaml` to override ' +
+  'project-specific vocabulary and paths without touching this file.\n\n';
 
 /**
  * Inserts MANAGED_HEADER between YAML frontmatter and body. Both skill

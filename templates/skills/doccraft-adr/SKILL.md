@@ -20,6 +20,18 @@ description: >-
 
 Not every brainstorm needs an ADR — only decisions you want **git history and agents** to reuse.
 
+## Configuration
+
+Read `docs/config.yaml` at invocation. The `adr:` section tells this
+skill where ADRs live. If the file is missing or `adr:` is absent, use
+the default.
+
+Relevant keys:
+
+- `adr.path` — ADR directory, relative to project root. Default:
+  `docs/adr`. Use this when the project stores ADRs somewhere else (e.g.
+  `docs/decisions/` or `architecture/adr/`).
+
 ## File location and naming
 
 - Path: **`docs/adr/NNN-short-slug.md`** — three-digit zero-padded index, kebab-case slug (e.g. `001-managed-postgres.md`).
