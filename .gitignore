@@ -34,7 +34,8 @@ coverage/
 .vscode/
 .idea/
 .claude/
-CLAUDE.md
 .cursor/
 .opencode/
 .codex/
+# NB: CLAUDE.md at the repo root is tracked intentionally (dogfood
+# project-level guidance for Claude Code agents). See commit that added it.
