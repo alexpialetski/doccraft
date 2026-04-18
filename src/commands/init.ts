@@ -4,18 +4,17 @@ import ora from 'ora';
 import { runOpenspec } from '../utils/openspec.js';
 import {
   detectInstalledTools,
-  filterSkillTargets,
   findStaleCursorSkills,
   formatToolsArg,
   getAvailableRules,
   getAvailableSkills,
+  getCanonicalSkillsTool,
   installRules,
   installSkills,
   parseToolsArg,
   resolveToolSelection,
   scaffoldDocsIfMissing,
   SUPPORTED_TOOLS,
-  validateConsolidate,
   type SkillTool,
 } from '../utils/skills.js';
 
@@ -24,7 +23,6 @@ export interface InitOptions {
   force?: boolean;
   profile?: string;
   skipOpenspec?: boolean;
-  consolidate?: boolean;
 }
 
 export async function runInit(targetPath: string, options: InitOptions): Promise<void> {
@@ -35,15 +33,7 @@ export async function runInit(targetPath: string, options: InitOptions): Promise
 
   const toolsArg = await resolveToolSelection(options.tools);
   console.log(chalk.dim(`Tools: ${formatToolsArg(toolsArg)}`));
-
-  if (options.consolidate) {
-    validateConsolidate(toolsArg);
-    console.log(
-      chalk.dim(
-        'Consolidate: skills → .claude/skills/ only (Cursor 2.4+ auto-discovers).'
-      )
-    );
-  }
+  printCursorVersionNoteIfNeeded(toolsArg);
   console.log('');
 
   if (!options.skipOpenspec) {
@@ -59,15 +49,21 @@ export async function runInit(targetPath: string, options: InitOptions): Promise
     console.log(chalk.dim('Skipping openspec init (--skip-openspec)'));
   }
 
-  await installDoccraftSkills(resolvedPath, toolsArg, {
-    consolidate: options.consolidate ?? false,
-  });
+  await installDoccraftSkills(resolvedPath, toolsArg);
 
   console.log(chalk.green('\nDone.'));
 }
 
-export interface InstallOptions {
-  consolidate?: boolean;
+function printCursorVersionNoteIfNeeded(toolsArg: string): void {
+  if (toolsArg === 'none') return;
+  const tools = parseToolsArg(toolsArg);
+  if (tools.some((t) => t.id === 'cursor')) {
+    console.log(
+      chalk.dim(
+        'Note: Cursor 2.4+ required to auto-discover skills at .claude/skills/.'
+      )
+    );
+  }
 }
 
 /**
@@ -76,26 +72,20 @@ export interface InstallOptions {
  *   1. **Scaffold docs** — seed `docs/README.md`, `docs/backlog.md`,
  *      `docs/queue.md`, `docs/config.yaml`, and the `stories/` + `adr/`
  *      README indexes, but only for files that don't already exist.
- *   2. **Install skills** — SKILL.md into every selected tool's
- *      `skills/` directory, unless `--consolidate` is set, in which case
- *      skills land only under `.claude/skills/` and Cursor 2.4+'s
- *      auto-discovery picks them up (ADR 005).
- *   3. **Install rules** — Cursor-style `.mdc` stubs into `.cursor/rules/`.
- *      Not affected by `--consolidate`: rules are a separate primitive
- *      (ADR 003) and serve Cursor users regardless of the skill-install
- *      layout.
- *   4. **Stale-cursor advisory** — if `--consolidate` is set and the
- *      project already has `.cursor/skills/doccraft-*` from a previous
- *      non-consolidated install, print an advisory. Non-destructive —
- *      the user removes manually when they're ready.
+ *   2. **Install skills** — every `SKILL.md` lands at `.claude/skills/`
+ *      regardless of tool selection (ADR 007). Claude Code reads it
+ *      natively; Cursor 2.4+ auto-discovers it. `.cursor/skills/` is
+ *      never written.
+ *   3. **Install rules** — Cursor-style `.mdc` stubs into `.cursor/rules/`
+ *      whenever Cursor is in the tool list. Separate primitive (ADR 003).
+ *   4. **Stale-cursor advisory** — if doccraft-owned dirs exist under
+ *      `.cursor/skills/` (from a pre-ADR-007 install), print a copy-
+ *      pasteable cleanup command. Non-destructive.
  */
 export async function installDoccraftSkills(
   projectPath: string,
-  toolsArg: string | undefined,
-  options: InstallOptions = {}
+  toolsArg: string | undefined
 ): Promise<void> {
-  const consolidate = options.consolidate ?? false;
-
   const scaffolded = await scaffoldDocsIfMissing(projectPath);
   if (scaffolded.length > 0) {
     console.log(chalk.dim(`\nScaffolded ${scaffolded.length} docs file(s): ${scaffolded.join(', ')}`));
@@ -121,17 +111,17 @@ export async function installDoccraftSkills(
     return;
   }
 
-  const skillTargets = filterSkillTargets(tools, consolidate);
+  const canonicalSkillsTool = getCanonicalSkillsTool();
 
   const spinner = ora(
-    `Installing ${skills.length} skill(s) into ${skillTargets.map((t) => t.name).join(', ')}...`
+    `Installing ${skills.length} skill(s) into ${canonicalSkillsTool.skillsDir}/...`
   ).start();
 
   try {
-    await installSkills(projectPath, skillTargets, skills);
+    await installSkills(projectPath, [canonicalSkillsTool], skills);
     const installedRules = await installRules(projectPath, tools, rules);
 
-    const skillsSummary = `${skills.length} skill(s) into ${skillTargets.map((t) => t.skillsDir).join(', ')}`;
+    const skillsSummary = `${skills.length} skill(s) into ${canonicalSkillsTool.skillsDir}`;
     if (installedRules.length > 0) {
       const toolsWithRules = tools.filter((t) => t.rulesDir);
       spinner.succeed(
@@ -147,25 +137,28 @@ export async function installDoccraftSkills(
     throw error;
   }
 
-  if (consolidate) {
-    const stale = await findStaleCursorSkills(projectPath);
-    if (stale.length > 0) {
-      console.log('');
-      console.log(
-        chalk.yellow(
-          `⚠ Stale doccraft skills at .cursor/skills/: ${stale.join(', ')}`
-        )
-      );
-      console.log(
-        chalk.dim(
-          '  Under --consolidate these are no longer written, but Cursor will keep loading them.'
-        )
-      );
-      console.log(
-        chalk.dim(
-          `  Remove manually: rm -r ${stale.map((s) => `.cursor/skills/${s}`).join(' ')}`
-        )
-      );
-    }
+  const stale = await findStaleCursorSkills(projectPath);
+  if (stale.length > 0) {
+    console.log('');
+    console.log(
+      chalk.yellow(
+        `⚠ Stale doccraft skills at .cursor/skills/: ${stale.join(', ')}`
+      )
+    );
+    console.log(
+      chalk.dim(
+        '  doccraft no longer writes to .cursor/skills/ (ADR 007); these are left over from a previous install.'
+      )
+    );
+    console.log(
+      chalk.dim(
+        '  Cursor keeps loading them alongside .claude/skills/ until they are removed.'
+      )
+    );
+    console.log(
+      chalk.dim(
+        `  Remove manually: rm -r ${stale.map((s) => `.cursor/skills/${s}`).join(' ')}`
+      )
+    );
   }
 }

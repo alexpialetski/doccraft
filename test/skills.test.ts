@@ -10,11 +10,11 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, expect, it, afterEach } from 'vitest';
 import {
-  filterSkillTargets,
   findStaleCursorSkills,
   formatToolsArg,
   getAvailableRules,
   getAvailableSkills,
+  getCanonicalSkillsTool,
   injectManagedHeader,
   installRules,
   installSkills,
@@ -24,8 +24,8 @@ import {
   resolveToolSelection,
   scaffoldDocsIfMissing,
   SUPPORTED_TOOLS,
-  validateConsolidate,
 } from '../src/utils/skills.js';
+import { installDoccraftSkills } from '../src/commands/init.js';
 
 const tempDirs: string[] = [];
 
@@ -134,42 +134,9 @@ describe('resolveToolSelection', () => {
   });
 });
 
-describe('validateConsolidate', () => {
-  it('accepts when both Claude Code and Cursor are selected', () => {
-    expect(() => validateConsolidate('claude,cursor')).not.toThrow();
-    expect(() => validateConsolidate('cursor,claude')).not.toThrow();
-  });
-
-  it('throws when only Claude Code is selected', () => {
-    expect(() => validateConsolidate('claude')).toThrow(/requires both/);
-  });
-
-  it('throws when only Cursor is selected', () => {
-    expect(() => validateConsolidate('cursor')).toThrow(/requires both/);
-  });
-
-  it('throws when "none" is selected (zero tools)', () => {
-    expect(() => validateConsolidate('none')).toThrow(/requires both/);
-  });
-
-  it('error message tells the user how to fix it', () => {
-    try {
-      validateConsolidate('claude');
-    } catch (err) {
-      expect((err as Error).message).toContain('--tools claude,cursor');
-    }
-  });
-});
-
-describe('filterSkillTargets', () => {
-  it('returns every tool when consolidate is false (dual-write preserved)', () => {
-    const filtered = filterSkillTargets(SUPPORTED_TOOLS, false);
-    expect(filtered.map((t) => t.id)).toEqual(SUPPORTED_TOOLS.map((t) => t.id));
-  });
-
-  it('keeps only Claude Code when consolidate is true', () => {
-    const filtered = filterSkillTargets(SUPPORTED_TOOLS, true);
-    expect(filtered.map((t) => t.id)).toEqual(['claude']);
+describe('getCanonicalSkillsTool', () => {
+  it('returns the Claude Code tool (ADR 007 canonical install target)', () => {
+    expect(getCanonicalSkillsTool().id).toBe('claude');
   });
 });
 
@@ -238,23 +205,39 @@ describe('detectInstalledTools', () => {
   });
 });
 
-describe('installSkills + filterSkillTargets (consolidate behaviour)', () => {
-  it('writes only to .claude/skills/ when consolidate filters the target list', async () => {
+describe('installDoccraftSkills (ADR 007 default layout)', () => {
+  it('writes skills only to .claude/skills/ even when --tools cursor', async () => {
     const project = makeTempProject();
-    const consolidatedTargets = filterSkillTargets(SUPPORTED_TOOLS, true);
-    await installSkills(project, consolidatedTargets);
+    await installDoccraftSkills(project, 'cursor');
 
     expect(existsSync(path.join(project, '.claude/skills/doccraft-story/SKILL.md'))).toBe(true);
-    expect(existsSync(path.join(project, '.cursor/skills/doccraft-story/SKILL.md'))).toBe(false);
-    // Full .cursor/skills/ tree should not be created at all.
     expect(existsSync(path.join(project, '.cursor/skills'))).toBe(false);
+    // Rules still land at .cursor/rules/ because Cursor is in the selection.
+    expect(existsSync(path.join(project, '.cursor/rules/planning-stories.mdc'))).toBe(true);
+  });
+
+  it('writes skills only to .claude/skills/ when --tools claude (no .cursor tree at all)', async () => {
+    const project = makeTempProject();
+    await installDoccraftSkills(project, 'claude');
+
+    expect(existsSync(path.join(project, '.claude/skills/doccraft-story/SKILL.md'))).toBe(true);
+    expect(existsSync(path.join(project, '.cursor'))).toBe(false);
+  });
+
+  it('writes skills only to .claude/skills/ when --tools claude,cursor (no dual-write)', async () => {
+    const project = makeTempProject();
+    await installDoccraftSkills(project, 'claude,cursor');
+
+    expect(existsSync(path.join(project, '.claude/skills/doccraft-story/SKILL.md'))).toBe(true);
+    expect(existsSync(path.join(project, '.cursor/skills'))).toBe(false);
+    expect(existsSync(path.join(project, '.cursor/rules/planning-stories.mdc'))).toBe(true);
   });
 });
 
 describe('installSkills', () => {
-  it('writes identical SKILL.md content for every bundled skill into each tool', async () => {
+  it('writes SKILL.md with the managed header for every bundled skill', async () => {
     const project = makeTempProject();
-    const installed = await installSkills(project, SUPPORTED_TOOLS);
+    const installed = await installSkills(project, [SUPPORTED_TOOLS[0]]);
 
     for (const skill of [
       'doccraft-story',
@@ -263,10 +246,8 @@ describe('installSkills', () => {
       'doccraft-queue-audit',
     ]) {
       const claudePath = path.join(project, `.claude/skills/${skill}/SKILL.md`);
-      const cursorPath = path.join(project, `.cursor/skills/${skill}/SKILL.md`);
       expect(existsSync(claudePath)).toBe(true);
-      expect(existsSync(cursorPath)).toBe(true);
-      expect(readFileSync(claudePath, 'utf8')).toBe(readFileSync(cursorPath, 'utf8'));
+      expect(readFileSync(claudePath, 'utf8')).toContain('Managed by **doccraft**');
       expect(installed.map((i) => ({ skill: i.skill, tool: i.tool }))).toContainEqual({
         skill,
         tool: 'claude',
