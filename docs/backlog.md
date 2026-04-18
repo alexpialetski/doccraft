@@ -21,6 +21,7 @@ rules and the Story-files coverage invariant.
 |----|------|--------|
 | P1.1 | Spike: does Cursor discover `.claude/skills/` out of the box? If yes, ship `--consolidate` flag | done |
 | P1.2 | Ship `--consolidate` install flag for dual-tool projects (per ADR 005) | planned |
+| P1.3 | doccraft owns tool selection in init (3-option picker, forwards `--tools` to openspec) | done |
 
 ### P2 — backlog (known valuable, not scheduled)
 
@@ -51,6 +52,7 @@ Detailed acceptance criteria for the items above. Queue rows in
 | P0.1 | [Externalize project vocabulary to docs/config.yaml](stories/p0-docs-config-externalization.md) |
 | P1.1 | [Spike — Cursor discovery of .claude/skills/](stories/p1-cursor-consolidation-spike.md) |
 | P1.2 | [Ship --consolidate install flag](stories/p1-consolidate-install-flag.md) |
+| P1.3 | [doccraft owns tool selection in init](stories/p1-init-tool-picker.md) |
 | P2.1 | [Parallel-waves split watch](stories/p2-parallel-waves-split-watch.md) |
 | P2.2 | [Docs-maintenance skill family](stories/p2-docs-maintenance-skills.md) |
 
