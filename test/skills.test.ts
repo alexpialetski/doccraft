@@ -29,9 +29,18 @@ describe('getAvailableSkills', () => {
   it('returns the bundled skill templates', async () => {
     const skills = await getAvailableSkills();
     expect(skills.length).toBeGreaterThan(0);
-    expect(skills.map((s) => s.name)).toContain('doccraft-story');
+    const names = skills.map((s) => s.name);
+    expect(names).toContain('doccraft-story');
+    expect(names).toContain('doccraft-adr');
     const story = skills.find((s) => s.name === 'doccraft-story');
     expect(story?.skillFilePath).toMatch(/templates\/skills\/doccraft-story\/SKILL\.md$/);
+  });
+
+  it('returns skills sorted by name for deterministic output', async () => {
+    const skills = await getAvailableSkills();
+    const names = skills.map((s) => s.name);
+    const sorted = [...names].sort((a, b) => a.localeCompare(b));
+    expect(names).toEqual(sorted);
   });
 });
 
@@ -80,21 +89,23 @@ describe('detectInstalledTools', () => {
 });
 
 describe('installSkills', () => {
-  it('writes identical SKILL.md content into each tool', async () => {
+  it('writes identical SKILL.md content for every bundled skill into each tool', async () => {
     const project = makeTempProject();
     const installed = await installSkills(project, SUPPORTED_TOOLS);
 
-    const claudePath = path.join(project, '.claude/skills/doccraft-story/SKILL.md');
-    const cursorPath = path.join(project, '.cursor/skills/doccraft-story/SKILL.md');
+    for (const skill of ['doccraft-story', 'doccraft-adr']) {
+      const claudePath = path.join(project, `.claude/skills/${skill}/SKILL.md`);
+      const cursorPath = path.join(project, `.cursor/skills/${skill}/SKILL.md`);
 
-    expect(existsSync(claudePath)).toBe(true);
-    expect(existsSync(cursorPath)).toBe(true);
-    expect(readFileSync(claudePath, 'utf8')).toBe(readFileSync(cursorPath, 'utf8'));
+      expect(existsSync(claudePath)).toBe(true);
+      expect(existsSync(cursorPath)).toBe(true);
+      expect(readFileSync(claudePath, 'utf8')).toBe(readFileSync(cursorPath, 'utf8'));
 
-    expect(installed.map((i) => ({ skill: i.skill, tool: i.tool }))).toContainEqual({
-      skill: 'doccraft-story',
-      tool: 'claude',
-    });
+      expect(installed.map((i) => ({ skill: i.skill, tool: i.tool }))).toContainEqual({
+        skill,
+        tool: 'claude',
+      });
+    }
   });
 
   it('overwrites an existing SKILL.md (refresh semantics)', async () => {
