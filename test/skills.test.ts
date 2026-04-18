@@ -32,6 +32,7 @@ describe('getAvailableSkills', () => {
     const names = skills.map((s) => s.name);
     expect(names).toContain('doccraft-story');
     expect(names).toContain('doccraft-adr');
+    expect(names).toContain('doccraft-session-wrap');
     const story = skills.find((s) => s.name === 'doccraft-story');
     expect(story?.skillFilePath).toMatch(/templates\/skills\/doccraft-story\/SKILL\.md$/);
   });
@@ -93,7 +94,7 @@ describe('installSkills', () => {
     const project = makeTempProject();
     const installed = await installSkills(project, SUPPORTED_TOOLS);
 
-    for (const skill of ['doccraft-story', 'doccraft-adr']) {
+    for (const skill of ['doccraft-story', 'doccraft-adr', 'doccraft-session-wrap']) {
       const claudePath = path.join(project, `.claude/skills/${skill}/SKILL.md`);
       const cursorPath = path.join(project, `.cursor/skills/${skill}/SKILL.md`);
 
