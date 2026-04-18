@@ -1,6 +1,6 @@
 {
   "name": "doccraft",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "description": "Documentation and project-story skills for Claude Code and Cursor, layered on OpenSpec",
   "keywords": [
     "doccraft",
