@@ -111,13 +111,8 @@ jobs:
 
       - run: pnpm run build
 
-      - name: Create/Update Version PR or Publish
-        uses: changesets/action@v1
-        with:
-          title: 'chore(release): version packages'
-          commit: 'chore(release): version packages'
-          createGithubReleases: true
-          publish: pnpm run release:ci
+      - name: Release (semantic-release)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: pnpm exec semantic-release
