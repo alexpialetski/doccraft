@@ -18,10 +18,19 @@ Stories use YAML frontmatter per the `doccraft-story` skill: `impact` (H/M/L),
 
 | # | Item | Story |
 |---|------|-------|
-| 1 | Ship `--consolidate` install flag for dual-tool projects | [P1.2](stories/p1-consolidate-install-flag.md) |
+|   |      |       |
+
+All planned P0/P1 items have shipped. Next decisions: promote a P2 item
+when one becomes urgent, or file new stories based on usage feedback.
+The P2.1 (parallel-waves split watch) and P2.2 (docs-maintenance skill
+family) items remain in the backlog for later consideration.
 
 **Recently shipped:**
 
+- P1.2 — `--consolidate` install flag writes skills to `.claude/skills/`
+  only for dual-tool projects, eliminating Cursor's double-load of every
+  skill. See [story](stories/p1-consolidate-install-flag.md) and
+  [ADR 005](adr/005-consolidate-skills-for-dual-tool.md).
 - P1.3 — doccraft owns tool selection in init (3-option picker,
   forwards `--tools` to openspec). Fixes the first-contact UX gap
   surfaced when a user ran `npx doccraft init` and saw openspec's
@@ -33,8 +42,7 @@ Stories use YAML frontmatter per the `doccraft-story` skill: `impact` (H/M/L),
   [ADR 004](adr/004-docs-config-schema.md).
 - P1.1 — Cursor `.claude/skills/` discovery spike. See
   [story](stories/p1-cursor-consolidation-spike.md) and
-  [ADR 005](adr/005-consolidate-skills-for-dual-tool.md). Implementation
-  follow-up tracked as P1.2 above.
+  [ADR 005](adr/005-consolidate-skills-for-dual-tool.md).
 
 ## Platform spikes (can run in parallel)
 
