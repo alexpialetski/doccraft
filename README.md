@@ -50,6 +50,7 @@ Flags forwarded to `openspec init`:
 doccraft-specific flags:
 
 - `--skip-openspec` — install doccraft skills only, skip `openspec init`.
+- `--consolidate` — **dual-tool only.** Write skills to `.claude/skills/` only; Cursor 2.4+ auto-discovers that directory without dedupe, so the default dual-write otherwise causes Cursor to load every skill twice. See [ADR 005](docs/adr/005-consolidate-skills-for-dual-tool.md). `.cursor/rules/*.mdc` stubs are unaffected. Throws if `--tools` isn't `claude,cursor`.
 
 ### `doccraft update [path]` (alias: `upgrade`)
 
@@ -60,6 +61,7 @@ Flags:
 - `--force` — force update even when already up to date.
 - `--tools <tools>` — which tools to refresh doccraft skills into (e.g. `claude`, `cursor`, `all`, `none`). Defaults to tools detected in the project.
 - `--skip-openspec` — refresh doccraft skills only.
+- `--consolidate` — **dual-tool only.** Same semantics as the init flag; requires explicit `--tools claude,cursor` on update (detection alone isn't a strong enough signal for an opinionated layout change). See [ADR 005](docs/adr/005-consolidate-skills-for-dual-tool.md).
 
 If `--tools` is omitted, doccraft detects installed tools by scanning for `.claude/` or `.cursor/`. When neither is present, doccraft falls back to installing into every supported tool.
 

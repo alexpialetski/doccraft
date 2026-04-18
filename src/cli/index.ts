@@ -20,6 +20,7 @@ program
   .option('--force', 'Forwarded to openspec init')
   .option('--profile <profile>', 'Forwarded to openspec init')
   .option('--skip-openspec', 'Skip running openspec init (install doccraft skills only)')
+  .option('--consolidate', 'Dual-tool only: write skills to .claude/skills/ only (Cursor 2.4+ auto-discovers). See ADR 005.')
   .action(async (targetPath: string = '.', options) => {
     try {
       await runInit(targetPath, options);
@@ -37,6 +38,7 @@ program
   .option('--force', 'Force update even when already up to date')
   .option('--tools <tools>', 'Which tools to refresh doccraft skills into (e.g. "claude", "cursor", "all", "none")')
   .option('--skip-openspec', 'Skip running openspec update (refresh doccraft skills only)')
+  .option('--consolidate', 'Dual-tool only: write skills to .claude/skills/ only (requires explicit --tools). See ADR 005.')
   .action(async (targetPath: string = '.', options) => {
     try {
       await runUpdate(targetPath, options);
