@@ -38,7 +38,7 @@ Authoritative overview, if the project has one: `docs/README.md`.
 | **Reference** | `docs/reference/<topic>.md` | Long-form **engineering** notes (runbooks, eval harnesses, pricing) that are not framed as an ADR. If the project has a `docs/reference/README.md`, add a link there when adding a new file. |
 | **Business** | `docs/business/<topic>.md` | **Business strategy** — target audience, business model, competitive landscape, marketing, unit economics, legal, launch sequence. Only propose if the project already tracks business docs under `docs/business/`; prefer updating existing topics over creating new ones. |
 | **Story** | `docs/stories/<slug>.md` | **Trackable scope** with acceptance criteria and optional `depends_on`. Follow `doccraft-story` if installed. |
-| **Backlog / queue** | `docs/backlog.md`, `docs/queue.md` | P-tier rows, status column, ordered "pick next" — not every chat. If the thread defined new **dependencies**, run `doccraft-queue-audit` if installed (Agent mode applies mechanical fixes). |
+| **Backlog / queue** | `docs/backlog.md`, `docs/queue.md` | P-tier rows, status column, ordered "pick next" — not every chat. If the thread defined new **dependencies**, point the user at `doccraft-queue-audit` (Agent mode applies mechanical fixes). |
 
 ## Gate checklist (run mentally before proposing)
 
@@ -77,11 +77,12 @@ If **none** of the above apply → go to **§ Exit**.
    them in the same turn. Offer drafts only when useful.
 
 4. If proposing an ADR, remind: next `NNN-`, no renumbering; use
-   `doccraft-adr` if installed.
+   `doccraft-adr`.
 
-5. If proposing a story, remind: use `doccraft-story` if installed; consider
-   updating `docs/backlog.md` (status column) and `docs/queue.md`
-   (pick-next order) when priorities shift.
+5. If proposing a story, remind: use `doccraft-story`; consider updating
+   `docs/backlog.md` (status column) and `docs/queue.md` (pick-next order)
+   when priorities shift, and invoke `doccraft-queue-audit` in the same
+   turn if new `depends_on` edges were introduced.
 
 ## Exit (nothing to capture)
 

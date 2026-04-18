@@ -12,6 +12,7 @@ Skills bundled so far:
 - **`doccraft-story`** — author/update product stories under `docs/stories/` with a typed YAML frontmatter (id, status, impact, urgency, tags, openspec, depends_on).
 - **`doccraft-adr`** — author/update architecture decision records under `docs/adr/` with Nygard-style Context / Decision / Consequences and explicit status + supersession.
 - **`doccraft-session-wrap`** — after a design/research/prioritisation thread, propose doc artifacts (ADR / research / reference / business / story / backlog edits) only when the conversation produced durable insight worth capturing.
+- **`doccraft-queue-audit`** — reconcile the story dependency graph, pick-next queue, and backlog status. In Agent mode, applies objective fixes in the same turn (with scale and working-tree containment); in Ask mode, proposes only.
 
 Each skill lands identically in `.claude/skills/<name>/SKILL.md` and `.cursor/skills/<name>/SKILL.md`; both tools consume the same format.
 
