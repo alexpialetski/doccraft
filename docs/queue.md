@@ -27,9 +27,14 @@ family) items remain in the backlog for later consideration.
 
 **Recently shipped:**
 
-- P1.2 — `--consolidate` install flag writes skills to `.claude/skills/`
-  only for dual-tool projects, eliminating Cursor's double-load of every
-  skill. See [story](stories/p1-consolidate-install-flag.md) and
+- P1.4 — default skill install to `.claude/skills/`; `--consolidate`
+  flag removed. Cursor 2.4+ auto-discovers the canonical Agent Skills
+  location; dual-write is no longer needed or desirable. See
+  [story](stories/p1-default-to-claude-skills.md) and
+  [ADR 007](adr/007-default-skill-install-to-claude-skills.md)
+  (supersedes ADR 005's default stance).
+- P1.2 — `--consolidate` install flag (superseded by P1.4; flag
+  removed). See [story](stories/p1-consolidate-install-flag.md) and
   [ADR 005](adr/005-consolidate-skills-for-dual-tool.md).
 - P1.3 — doccraft owns tool selection in init (3-option picker,
   forwards `--tools` to openspec). Fixes the first-contact UX gap

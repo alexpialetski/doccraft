@@ -1,6 +1,14 @@
 # ADR 005: Consolidate skills install to `.claude/skills/` for dual-tool projects (opt-in)
 
-**Status:** Accepted
+**Status:** Superseded by [ADR 007](007-default-skill-install-to-claude-skills.md).
+
+> The opt-in `--consolidate` flag decision below was accurate at the time
+> given the semantic concern about forcing `.claude/` on Cursor-only
+> teams. ADR 007 revisits that objection — `.claude/skills/` has become
+> the de facto canonical Agent Skills location across tools, weakening
+> the semantic half of the argument — and flips the default to
+> "always consolidate", removing the flag entirely. This ADR remains
+> useful as the historical record of how the opt-in decision was made.
 
 ## Context
 
