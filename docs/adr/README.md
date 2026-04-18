@@ -16,3 +16,4 @@ explicit Status and supersession).
 | [001](001-skill-install-pipeline.md) | Mirror OpenSpec install pattern; raw-file templates | Accepted |
 | [002](002-defer-config-externalization.md) | Defer `docs/config.yaml` externalization until after all four skills ship | Accepted |
 | [003](003-cursor-rule-stubs-only.md) | Ship Cursor rule stubs; no rule equivalents for Claude Code | Accepted |
+| [004](004-docs-config-schema.md) | `docs/config.yaml` schema — shape, location, lifecycle | Accepted |

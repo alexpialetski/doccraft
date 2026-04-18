@@ -13,7 +13,7 @@ rules and the Story-files coverage invariant.
 
 | ID | Item | Status |
 |----|------|--------|
-| P0.1 | Externalize project vocabulary to `docs/config.yaml` so user edits survive `doccraft update` | planned |
+| P0.1 | Externalize project vocabulary to `docs/config.yaml` so user edits survive `doccraft update` | done |
 
 ### P1 — next cycle (high value, scheduled soon)
 

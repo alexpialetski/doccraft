@@ -18,8 +18,11 @@ Stories use YAML frontmatter per the `doccraft-story` skill: `impact` (H/M/L),
 
 | # | Item | Story |
 |---|------|-------|
-| 1 | Externalize project vocabulary to `docs/config.yaml` | [P0.1](stories/p0-docs-config-externalization.md) |
-| 2 | Spike — Cursor discovery of `.claude/skills/` | [P1.1](stories/p1-cursor-consolidation-spike.md) |
+| 1 | Spike — Cursor discovery of `.claude/skills/` | [P1.1](stories/p1-cursor-consolidation-spike.md) |
+
+**Note:** P0.1 (externalize project vocabulary to `docs/config.yaml`) is
+**done** — see [story](stories/p0-docs-config-externalization.md) and
+[ADR 004](adr/004-docs-config-schema.md).
 
 ## Platform spikes (can run in parallel)
 
