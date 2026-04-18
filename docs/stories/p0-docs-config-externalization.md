@@ -1,7 +1,7 @@
 ---
 id: P0.1
 title: Externalize project vocabulary to docs/config.yaml
-status: todo
+status: done
 impact: H
 urgency: now
 tags:
@@ -13,6 +13,7 @@ roadmap_ref: P0.1
 depends_on: []
 adr_refs:
   - 002-defer-config-externalization.md
+  - 004-docs-config-schema.md
 ---
 
 ## Problem / outcome
@@ -28,24 +29,24 @@ and forward-references `docs/config.yaml`. Land that file.
 
 ## Acceptance criteria
 
-- [ ] `docs/config.yaml` exists as a first-class init artifact — created
+- [x] `docs/config.yaml` exists as a first-class init artifact — created
   by `doccraft init` with opinionated defaults, never overwritten by
   `doccraft update`.
-- [ ] The skills read at least the following keys from config at
+- [x] The skills read at least the following keys from config at
   invocation time (with in-skill defaults as a last-resort fallback):
   - `story.areas`, `story.slices`, `story.themes` — tag vocabularies
   - `story.id.tiers` — P-tier prefixes if the project uses them
   - `adr.path` — defaults to `docs/adr/`
   - `queue.path` — defaults to `docs/queue.md`
   - `backlog.path` — defaults to `docs/backlog.md`
-- [ ] `doccraft-queue-audit` stresses the config schema: id-regex, lane
+- [x] `doccraft-queue-audit` stresses the config schema: id-regex, lane
   heuristic overrides, platform-spikes table location.
-- [ ] Managed-by-doccraft header text updated: the forward-reference
+- [x] Managed-by-doccraft header text updated: the forward-reference
   becomes "see `docs/config.yaml`" rather than "planned follow-up".
-- [ ] Tests cover: default-fallback when config is missing, override
+- [x] Tests cover: default-fallback when config is missing, override
   when config is present, install-time scaffolding that only runs on
   first init (same semantics as the `docs/` scaffold).
-- [ ] ADR 004 (or next number) captures the finalized config schema.
+- [x] ADR 004 captures the finalized config schema.
 
 ## Notes
 
