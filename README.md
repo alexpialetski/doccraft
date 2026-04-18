@@ -7,7 +7,11 @@ Documentation and project-story skills for [Claude Code](https://claude.com/clau
 1. Wraps `openspec init` / `openspec update` so you don't have to run them separately.
 2. Installs a curated set of skills and rules for Claude Code and Cursor that manage docs-folder workflow and project story.
 
-Skill templates ship in the next release — the initial `0.x` versions just set up the automation pipeline and wrap OpenSpec.
+Skills bundled so far:
+
+- **`doccraft-story`** — author/update product stories under `docs/stories/` with a typed YAML frontmatter (id, status, impact, urgency, tags, openspec, depends_on).
+
+Each skill lands identically in `.claude/skills/<name>/SKILL.md` and `.cursor/skills/<name>/SKILL.md`; both tools consume the same format.
 
 ## Install
 
@@ -28,7 +32,7 @@ Requires Node.js `>= 20.19.0`.
 
 ### `doccraft init [path]`
 
-Initializes doccraft in a project. Runs `openspec init` under the hood and then (soon) installs doccraft's skill templates.
+Initializes doccraft in a project. Runs `openspec init` under the hood, then installs doccraft's skill templates into each selected tool's `skills/` directory.
 
 Flags forwarded to `openspec init`:
 
@@ -47,7 +51,10 @@ Refreshes doccraft skill templates and runs `openspec update` to pull new OpenSp
 Flags:
 
 - `--force` — force update even when already up to date.
+- `--tools <tools>` — which tools to refresh doccraft skills into (e.g. `claude`, `cursor`, `all`, `none`). Defaults to tools detected in the project.
 - `--skip-openspec` — refresh doccraft skills only.
+
+If `--tools` is omitted, doccraft detects installed tools by scanning for `.claude/` or `.cursor/`. When neither is present, doccraft falls back to installing into every supported tool.
 
 ## Development
 
@@ -65,11 +72,10 @@ pnpm run dev:cli -- init ./some/project
 
 ### Releasing
 
-Releases are automated via [Changesets](https://github.com/changesets/changesets):
+Releases are automated via [semantic-release](https://github.com/semantic-release/semantic-release):
 
-1. Add a changeset to your PR: `pnpm exec changeset`.
-2. Merge to `main`. The release workflow opens a "Version Packages" PR.
-3. Merge the Version Packages PR to publish to npm and create a GitHub release.
+1. Use conventional-commit messages (`feat:`, `fix:`, `feat!:` for breaking).
+2. Merge to `main`. The release workflow publishes to npm and creates a GitHub release automatically based on the commit history.
 
 Conventional commit format is enforced on PRs by commitlint.
 
