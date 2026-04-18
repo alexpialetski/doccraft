@@ -1,0 +1,18 @@
+---
+description: ADR format for docs/adr — Nygard sections, numbering, status
+globs: docs/adr/**/*.md
+alwaysApply: false
+---
+
+# Architecture decision records
+
+When editing markdown under `docs/adr/`, follow the `doccraft-adr` skill for
+the Nygard structure (Context / Decision / Consequences; Alternatives
+considered when useful), ADR numbering, and explicit Status / supersession.
+
+`docs/adr/README.md` is the **index** only — it does not require `NNN-`
+numbering or Nygard sections.
+
+Never renumber a published ADR. To change direction, add a new ADR that
+**supersedes** the old one and update the old ADR's Status line to point at
+the new file.

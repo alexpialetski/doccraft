@@ -1,0 +1,22 @@
+---
+description: Planning story conventions for docs/stories — follow doccraft-story
+globs: docs/stories/**/*.md
+alwaysApply: false
+---
+
+# Planning stories
+
+When editing files under `docs/stories/`, follow the `doccraft-story` skill
+for the YAML frontmatter contract (`id`, `title`, `status`, `impact`,
+`urgency`, `tags`, `openspec`, `depends_on`, …), tag vocabulary
+(`area:` / `slice:` / `theme:` prefixes), and enum values.
+
+Each `depends_on` entry must be an `id` that exists on another story, or a
+deliberate backlog-only prerequisite documented in **Notes**. Do not invent
+fake ids.
+
+## After new stories or dependency edits
+
+When you create a new story or change `depends_on` / `id` in a way that
+affects ordering, invoke the `doccraft-queue-audit` skill in the same turn
+so the queue, backlog, and story frontmatter stay consistent.
