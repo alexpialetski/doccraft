@@ -10,6 +10,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, expect, it, afterEach } from 'vitest';
 import {
+  formatToolsArg,
   getAvailableRules,
   getAvailableSkills,
   injectManagedHeader,
@@ -18,6 +19,7 @@ import {
   MANAGED_HEADER,
   parseToolsArg,
   detectInstalledTools,
+  resolveToolSelection,
   scaffoldDocsIfMissing,
   SUPPORTED_TOOLS,
 } from '../src/utils/skills.js';
@@ -92,6 +94,52 @@ describe('injectManagedHeader', () => {
     // so this test represents a theoretical concern — but catching it keeps us honest.)
     const headerCount = (once.match(/Managed by \*\*doccraft\*\*/g) ?? []).length;
     expect(headerCount).toBe(1);
+  });
+});
+
+describe('resolveToolSelection', () => {
+  // In vitest, process.stdin is not a TTY, so the non-prompt branches fire.
+  // We do not test the prompt branch from within unit tests — it relies on
+  // an interactive TTY and is covered by manual E2E.
+
+  it('returns a canonical comma-list when --tools is explicit', async () => {
+    expect(await resolveToolSelection('claude')).toBe('claude');
+    expect(await resolveToolSelection('cursor')).toBe('cursor');
+    expect(await resolveToolSelection('claude,cursor')).toBe('claude,cursor');
+  });
+
+  it('expands "all" to the full supported-tool list so openspec does not install to its 28-tool catalog', async () => {
+    const expanded = await resolveToolSelection('all');
+    expect(expanded).toBe(SUPPORTED_TOOLS.map((t) => t.id).join(','));
+  });
+
+  it('passes "none" through unchanged so openspec can opt out', async () => {
+    expect(await resolveToolSelection('none')).toBe('none');
+  });
+
+  it('normalises case + whitespace + duplicates', async () => {
+    expect(await resolveToolSelection(' Claude , claude , Cursor ')).toBe('claude,cursor');
+  });
+
+  it('throws on unknown tool ids (delegates to parseToolsArg)', async () => {
+    await expect(resolveToolSelection('claude,bogus')).rejects.toThrow(/Unknown tool 'bogus'/);
+  });
+
+  it('defaults to every supported tool when --tools is absent and stdin is not a TTY', async () => {
+    const resolved = await resolveToolSelection(undefined);
+    expect(resolved).toBe(SUPPORTED_TOOLS.map((t) => t.id).join(','));
+  });
+});
+
+describe('formatToolsArg', () => {
+  it('renders tool ids as their human-readable names', () => {
+    expect(formatToolsArg('claude')).toBe('Claude Code');
+    expect(formatToolsArg('cursor')).toBe('Cursor');
+    expect(formatToolsArg('claude,cursor')).toBe('Claude Code, Cursor');
+  });
+
+  it('annotates "none" so users know what they asked for', () => {
+    expect(formatToolsArg('none')).toContain('none');
   });
 });
 

@@ -2,6 +2,7 @@ import { readdir, readFile, mkdir, writeFile, stat } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import select from '@inquirer/select';
 
 /**
  * An AI tool that consumes Agent Skills from `{tool.skillsDir}/skills/<name>/SKILL.md`.
@@ -114,6 +115,65 @@ export async function getAvailableRules(): Promise<RuleTemplate[]> {
   }
 
   return rules.sort((a, b) => a.fileName.localeCompare(b.fileName));
+}
+
+/**
+ * Resolves the tool selection for `doccraft init` before any subprocess runs.
+ *
+ * Precedence:
+ *   1. If `--tools` was passed, validate + canonicalize (expand `all` to the
+ *      explicit list, dedupe, lowercase).
+ *   2. If stdin is a TTY, prompt with a 3-choice picker scoped to the tools
+ *      doccraft actually targets — not openspec's 28-tool catalog.
+ *   3. Otherwise (piped input, CI), default to both supported tools.
+ *
+ * Why canonicalize instead of passing raw:
+ *   - `--tools all` in doccraft means "all doccraft-supported tools" (Claude
+ *     Code + Cursor). OpenSpec would interpret `all` as its own 28-tool
+ *     catalog, which is a semantic mismatch. Expanding to `claude,cursor`
+ *     before forwarding keeps the two tools aligned on what `all` means
+ *     in doccraft's context.
+ *   - Lowercasing + deduping gives a stable string we can re-use across
+ *     the init command (pass to openspec, pass to installDoccraftSkills,
+ *     display to the user).
+ */
+export async function resolveToolSelection(raw: string | undefined): Promise<string> {
+  if (raw !== undefined) {
+    const lower = raw.trim().toLowerCase();
+    if (lower === 'none') return 'none';
+    const tools = parseToolsArg(raw);
+    return tools.map((t) => t.id).join(',');
+  }
+
+  if (!process.stdin.isTTY) {
+    return SUPPORTED_TOOLS.map((t) => t.id).join(',');
+  }
+
+  const answer = await select({
+    message: 'Which AI tool(s) should doccraft set up?',
+    choices: [
+      { name: 'Claude Code', value: 'claude' },
+      { name: 'Cursor', value: 'cursor' },
+      { name: 'Both Claude Code and Cursor', value: 'claude,cursor' },
+    ],
+    default: 'claude,cursor',
+  });
+
+  return answer;
+}
+
+/**
+ * Renders a canonical --tools string as human-readable tool names for the
+ * one-line echo in `doccraft init` / `update`.
+ */
+export function formatToolsArg(toolsArg: string): string {
+  if (toolsArg === 'none') return 'none (skip tool-specific install)';
+  const ids = toolsArg.split(',');
+  const names = ids.map((id) => {
+    const tool = SUPPORTED_TOOLS.find((t) => t.id === id);
+    return tool?.name ?? id;
+  });
+  return names.join(', ');
 }
 
 /**
