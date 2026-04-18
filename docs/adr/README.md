@@ -18,3 +18,4 @@ explicit Status and supersession).
 | [003](003-cursor-rule-stubs-only.md) | Ship Cursor rule stubs; no rule equivalents for Claude Code | Accepted |
 | [004](004-docs-config-schema.md) | `docs/config.yaml` schema — shape, location, lifecycle | Accepted |
 | [005](005-consolidate-skills-for-dual-tool.md) | Consolidate skills install to `.claude/skills/` for dual-tool projects (opt-in) | Accepted |
+| [006](006-doccraft-owns-tool-selection.md) | doccraft owns tool selection in init; forwards `--tools` to openspec | Accepted |

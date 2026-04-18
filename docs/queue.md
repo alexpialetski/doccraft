@@ -22,6 +22,12 @@ Stories use YAML frontmatter per the `doccraft-story` skill: `impact` (H/M/L),
 
 **Recently shipped:**
 
+- P1.3 — doccraft owns tool selection in init (3-option picker,
+  forwards `--tools` to openspec). Fixes the first-contact UX gap
+  surfaced when a user ran `npx doccraft init` and saw openspec's
+  28-tool picker before doccraft's own UI. See
+  [story](stories/p1-init-tool-picker.md) and
+  [ADR 006](adr/006-doccraft-owns-tool-selection.md).
 - P0.1 — externalize project vocabulary to `docs/config.yaml`. See
   [story](stories/p0-docs-config-externalization.md) and
   [ADR 004](adr/004-docs-config-schema.md).
