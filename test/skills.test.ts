@@ -154,6 +154,7 @@ describe('installSkills', () => {
       'utf8'
     );
     expect(content).toContain('Managed by **doccraft**');
+    expect(content).toContain('docs/config.yaml');
     // Header must appear after frontmatter closes and before the body title.
     const fmEnd = content.indexOf('\n---\n', 4) + '\n---\n'.length;
     const headerIdx = content.indexOf('Managed by **doccraft**');
@@ -226,7 +227,22 @@ describe('scaffoldDocsIfMissing', () => {
     expect(created).toContain('docs/queue.md');
     expect(created).toContain('docs/stories/README.md');
     expect(created).toContain('docs/adr/README.md');
+    expect(created).toContain('docs/config.yaml');
     expect(existsSync(path.join(project, 'docs/backlog.md'))).toBe(true);
+    expect(existsSync(path.join(project, 'docs/config.yaml'))).toBe(true);
+  });
+
+  it('preserves user edits to docs/config.yaml across updates', async () => {
+    const project = makeTempProject();
+    await scaffoldDocsIfMissing(project);
+    const configPath = path.join(project, 'docs/config.yaml');
+    writeFileSync(configPath, 'story:\n  areas: [payments, orders]\n', 'utf8');
+
+    const created = await scaffoldDocsIfMissing(project);
+    expect(created).not.toContain('docs/config.yaml');
+    expect(readFileSync(configPath, 'utf8')).toBe(
+      'story:\n  areas: [payments, orders]\n'
+    );
   });
 
   it('never overwrites user edits to scaffolded files', async () => {

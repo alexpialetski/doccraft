@@ -21,6 +21,27 @@ description: >-
   **`depends_on`**, invoke the `doccraft-queue-audit` skill in the same
   turn to reconcile the queue graph.
 
+## Configuration
+
+Read `docs/config.yaml` at invocation. The `story:` section is this
+skill's customisation surface; override the defaults in the tables below
+with the values found there. If the file is missing or the `story:`
+section is absent, use the defaults below as-is.
+
+Relevant keys:
+
+- `story.areas`, `story.slices`, `story.themes` — tag vocabulary lists
+  (replace the default `area:` / `slice:` / `theme:` values).
+- `story.id.tiers` — filename tier prefixes like `p0`…`p4`. Empty list
+  `[]` means the project does not use tier prefixes.
+- `story.id.pattern` — regex accepting valid story `id:` values in
+  frontmatter. Use this to validate new stories and to normalise
+  `depends_on` typos. Default: `^(P\d+(\.\d+)?|[a-z][a-z0-9-]+)$`.
+
+Adding to a list in `docs/config.yaml` teaches the skill a new valid
+value without touching this file (which `doccraft update` regenerates).
+That is the intended way to extend vocabulary for a project.
+
 ## File location and naming
 
 - Path: **`docs/stories/<slug>.md`** — kebab-case slug.
@@ -82,19 +103,16 @@ A story may list several tags, e.g. `area:api`, `area:data`, `theme:performance`
 
 ### Extending the vocabulary
 
-- If **no** existing `area:`, `slice:`, or `theme:` value fits, and the label
-  will **recur**, add it to the table above and commit the skill update
-  together with the first story that uses it. Keep this file the single
-  source of truth ("enums").
-- **One-off** nuance that will not recur belongs in the body (**Notes**), not
-  as a new tag.
+- If **no** existing `area:`, `slice:`, or `theme:` value fits, and the
+  label will **recur**, add it to the matching list in `docs/config.yaml`
+  (keys `story.areas` / `story.slices` / `story.themes`). Commit the
+  config edit together with the first story that uses the new value.
+- **One-off** nuance that will not recur belongs in the body (**Notes**),
+  not as a new tag.
 
-> **Note:** doccraft will soon externalize this vocabulary to
-> `docs/config.yaml` so project-specific edits survive `doccraft update`.
-> Until then, edits to this table are **overwritten on `doccraft update`** —
-> if your project needs different vocabulary right now, keep it tracked
-> outside this file (e.g., a short `docs/README.md` section) until the
-> config layer lands.
+Do not edit the tables in this `SKILL.md` directly — `doccraft update`
+regenerates this file and would overwrite the edit. `docs/config.yaml`
+is the single source of truth for project-specific vocabulary.
 
 ### Invalid examples (do not use)
 

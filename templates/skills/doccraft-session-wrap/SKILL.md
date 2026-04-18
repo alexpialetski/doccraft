@@ -27,6 +27,28 @@ description: >-
 **Default:** propose artifacts **only if necessary**. Do not invent work to
 document.
 
+## Configuration
+
+Read `docs/config.yaml` at invocation. The `sessionWrap.capture:` block
+controls which artifact categories are in scope for this project — skip
+rows entirely in the proposals table when their category is disabled.
+
+Relevant keys:
+
+- `sessionWrap.capture.research` — default `true`.
+- `sessionWrap.capture.reference` — default `true`.
+- `sessionWrap.capture.business` — default `false`. Projects that track
+  strategy under `docs/business/` set this to `true`; most projects
+  leave it off.
+
+If `docs/config.yaml` is missing, apply the defaults above. The `ADR`,
+`Story`, and `Backlog / queue` categories are always in scope — they
+are the load-bearing set.
+
+Also honour path overrides from other sections when proposing file
+locations: `adr.path` (default `docs/adr`), `queue.path`
+(default `docs/queue.md`), `backlog.path` (default `docs/backlog.md`).
+
 ## Docs map (where things go)
 
 Authoritative overview, if the project has one: `docs/README.md`.

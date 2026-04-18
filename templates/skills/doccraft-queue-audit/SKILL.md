@@ -29,6 +29,31 @@ Not for: authoring a new story (use `doccraft-story`), recording a
 decision (use `doccraft-adr`), or proposing artifacts from a chat thread
 (use `doccraft-session-wrap`).
 
+## Configuration
+
+Read `docs/config.yaml` at invocation. Several sections feed into this
+skill; every key below has a default in the rest of this body so a
+missing config file is a soft fallback, not an error.
+
+Relevant keys:
+
+- `queue.path`, `backlog.path` — file locations. Defaults:
+  `docs/queue.md`, `docs/backlog.md`.
+- `queue.tables.suggestedOrder`, `queue.tables.platformSpikes` — the
+  heading text this skill uses to find the two tables in `queue.path`.
+  Defaults: `Suggested order`, `Platform spikes`. Rename in config if
+  your project uses different headings; the skill matches on heading
+  text, not row position.
+- `story.id.pattern` — regex for valid story ids. Used when listing
+  unknown-id errors and when normalising obvious typos.
+- `queueAudit.laneFrom` — tag-prefix priority list for the lane
+  heuristic in the parallel-waves pass. Default: `[area, slice]`. Set
+  to `[slice, area]` for projects that group work primarily by product
+  surface.
+- `queueAudit.scale.maxStoryFiles`, `queueAudit.scale.maxQueueReorderPct`
+  — thresholds that trigger stop-and-confirm in Agent mode. Defaults:
+  `5`, `50`. See **Containment** below.
+
 ## What this skill reads and writes
 
 **Reads:**
@@ -290,8 +315,7 @@ from story Y."]
 - `docs/backlog.md` — full P-tier tables and Status column.
 - `doccraft-story` — field contract for story frontmatter.
 
-> **Planned:** project-specific vocabulary and id conventions (tiers,
-> area/slice tags, queue-table structure) will move to
-> `docs/config.yaml` in a follow-up change so audit rules stay stable
-> across projects. For now, `doccraft-story`'s defaults are
-> authoritative.
+> Project-specific vocabulary (tiers, area/slice tags, queue-table
+> headings, scale thresholds) lives in `docs/config.yaml` — the
+> **Configuration** section above lists the keys this skill reads. The
+> tables in this body are defaults used when no config is present.
