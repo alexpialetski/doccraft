@@ -1,0 +1,156 @@
+---
+name: doccraft-story
+description: >-
+  Author or update product stories (a.k.a. planning docs, backlog items,
+  tickets, specs) as Markdown under docs/stories/ with a YAML frontmatter
+  contract (id, status, impact, urgency, depends_on, tags, openspec). Use this
+  whenever the user is creating a story, reprioritising work, writing
+  acceptance criteria, linking a story to OpenSpec or an ADR, or editing
+  anything under docs/stories/ — even if they call it a spec, ticket, backlog
+  row, or planning doc.
+---
+
+# doccraft — planning stories
+
+## When to use
+
+- Creating a new story in `docs/stories/`.
+- Updating status, acceptance criteria, tags, or `openspec` on an existing story.
+- When closing a story: consider updating `docs/queue.md` and the **Status**
+  column in `docs/backlog.md`. After **adding** a story or changing
+  **`depends_on`**, run the `doccraft-queue-audit` skill if installed, to
+  reconcile the queue graph.
+
+## File location and naming
+
+- Path: **`docs/stories/<slug>.md`** — kebab-case slug.
+- **P-tier stories** (aligned with a prioritised backlog): use
+  `p{tier}-<topic>.md` where tier is `p0`…`p4`. The ordinal (e.g. `P0.3`)
+  lives in YAML `id`, not in the filename. Examples:
+  `p0-payment-retry-flow.md`, `p2-observability-rollout.md`.
+- **Non-tier work**: stable prefix + slug, e.g. `opt-2a-workflow-rename.md`.
+- One story per file. **No epic folders** — use prefixed `tags` for grouping.
+
+## YAML frontmatter (required fields)
+
+Use valid YAML between `---` delimiters at the top of the file.
+
+| Field | Required | Values / notes |
+|-------|----------|----------------|
+| `id` | yes | Stable, unique id across stories. `P0.3` when aligned to `docs/backlog.md`, or a slug like `story-2026-001`. |
+| `title` | yes | Short human-readable title. |
+| `status` | yes | `todo` \| `in_progress` \| `done` — **manual** updates only. |
+| `impact` | yes | `H` (high) \| `M` \| `L` — product or engineering leverage. |
+| `urgency` | yes | `now` \| `soon` \| `later` — time sensitivity or deadline pressure. |
+| `tags` | yes | YAML list of **prefixed** strings (`area:`, `slice:`, `theme:`) from the vocabulary below. If nothing fits and the label will recur, extend this skill in the same change (see **Extending the vocabulary**). |
+| `openspec` | yes | `not-needed` \| `recommended` \| `required` — whether OpenSpec-style spec work fits before coding. |
+| `updated` | recommended | ISO date `YYYY-MM-DD` when the story last changed meaningfully. |
+| `roadmap_ref` | optional | e.g. `P1.7` — pointer to the backlog row when applicable. |
+| `depends_on` | optional | YAML list of **story `id` values** that must be satisfied **before** this story is picked up (prerequisites). Omit or `[]` if none. Each entry must match another story's `id` or a backlog id you intentionally treat as external — prefer real story ids so the queue-audit graph stays honest. |
+| `adr_refs` | optional | List of ADR filenames this story implements or contradicts (e.g. `001-foo.md`). |
+| `openspec_change` | optional | Path or name of the OpenSpec change folder when one exists. |
+
+> Do not invent new values for `status`, `impact`, `urgency`, or `openspec`
+> without updating this skill in the same change — the enum tables above are
+> the single source of truth. One-off nuance belongs in the body, not as a
+> new enum value.
+
+### `openspec` guidance
+
+- **`not-needed`** — small change, obvious scope, few files.
+- **`recommended`** — multi-module, schema/graph shifts, ambiguous scope, or
+  high regression risk; add a sentence in the body:
+  *OpenSpec recommended because: …*
+- **`required`** — project policy demands formal spec-before-code for this
+  class of change.
+
+Do not create an `openspec/` tree unless the repository has adopted OpenSpec;
+the field is preparatory.
+
+## Tag vocabulary
+
+Every tag uses a **prefix** so subsystem vs product slice vs cross-cutting
+theme is unambiguous. Use **lowercase** after the colon (e.g. `area:api`).
+
+| Prefix | Meaning | Examples |
+|--------|---------|----------|
+| `area:` | Subsystem / code area. Align with your project's commit scopes where you already have them. | `area:api`, `area:cli`, `area:auth`, `area:data`, `area:infra`, `area:schemas` |
+| `slice:` | Product surface that spans multiple areas. | `slice:ui`, `slice:admin`, `slice:onboarding` |
+| `theme:` | Cross-cutting quality or kind of work. | `theme:observability`, `theme:performance`, `theme:security`, `theme:docs`, `theme:testing` |
+
+A story may list several tags, e.g. `area:api`, `area:data`, `theme:performance`.
+
+### Extending the vocabulary
+
+- If **no** existing `area:`, `slice:`, or `theme:` value fits, and the label
+  will **recur**, add it to the table above and commit the skill update
+  together with the first story that uses it. Keep this file the single
+  source of truth ("enums").
+- **One-off** nuance that will not recur belongs in the body (**Notes**), not
+  as a new tag.
+
+> **Note:** doccraft will soon externalize this vocabulary to
+> `docs/config.yaml` so project-specific edits survive `doccraft update`.
+> Until then, edits to this table are **overwritten on `doccraft update`** —
+> if your project needs different vocabulary right now, keep it tracked
+> outside this file (e.g., a short `docs/README.md` section) until the
+> config layer lands.
+
+### Invalid examples (do not use)
+
+- Bare words: `api`, `ui` — always use a prefix so the kind of label is
+  explicit.
+- Wrong prefix for the kind of label (e.g. `area:ui` while `slice:ui` is the
+  convention) — prefer `slice:` for product surfaces.
+
+## Body template
+
+After frontmatter, use markdown sections such as:
+
+1. **Problem / outcome** — what user or system need this addresses.
+2. **Acceptance criteria** — bullet list, testable where possible.
+3. **Notes** — links to code (`src/...`), related ADRs, PRs.
+
+## Example
+
+````markdown
+---
+id: P0.3
+title: Payment retry flow with idempotency keys
+status: todo
+impact: H
+urgency: now
+tags:
+  - area:api
+  - area:data
+openspec: recommended
+updated: 2026-04-18
+roadmap_ref: P0.3
+depends_on: []
+---
+
+## Problem / outcome
+
+Failed third-party charges silently drop transactions; add retries with
+idempotency so users can reorder without double-billing.
+
+## Acceptance criteria
+
+- [ ] Retries use persisted idempotency keys.
+- [ ] Integration tests cover success, transient-failure, and permanent-failure paths.
+- [ ] Runbook updated with the new retry behaviour.
+
+## Notes
+
+OpenSpec recommended because: touches schema + payment service + integration tests.
+````
+
+## Workflow reminders
+
+- Move `status` to `in_progress` when you start implementation; `done` when
+  shipped or explicitly abandoned (note why in body if abandoned).
+- When reprioritising, consider updating `docs/queue.md` in the same commit
+  as meaningful story status changes.
+- After creating a story or changing `depends_on`, run the
+  `doccraft-queue-audit` skill if installed so the working queue stays
+  consistent with the dependency graph.

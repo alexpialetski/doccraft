@@ -1,9 +1,11 @@
 import path from 'node:path';
 import chalk from 'chalk';
 import { runOpenspec } from '../utils/openspec.js';
+import { installDoccraftSkills } from './init.js';
 
 export interface UpdateOptions {
   force?: boolean;
+  tools?: string;
   skipOpenspec?: boolean;
 }
 
@@ -25,7 +27,7 @@ export async function runUpdate(targetPath: string, options: UpdateOptions): Pro
     console.log(chalk.dim('Skipping openspec update (--skip-openspec)'));
   }
 
-  // TODO(skills): refresh doccraft skill templates alongside openspec instructions.
-  console.log(chalk.yellow('\nSkill template refresh: coming in the next release.'));
+  await installDoccraftSkills(resolvedPath, options.tools);
+
   console.log(chalk.green('\nDone.'));
 }

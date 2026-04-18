@@ -35,6 +35,7 @@ program
   .alias('upgrade')
   .description('Update doccraft skills and refresh openspec instructions')
   .option('--force', 'Force update even when already up to date')
+  .option('--tools <tools>', 'Which tools to refresh doccraft skills into (e.g. "claude", "cursor", "all", "none")')
   .option('--skip-openspec', 'Skip running openspec update (refresh doccraft skills only)')
   .action(async (targetPath: string = '.', options) => {
     try {
