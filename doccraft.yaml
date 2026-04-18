@@ -9,6 +9,9 @@
 # config.yaml` in the doccraft package. Edits below reflect choices
 # specific to the doccraft repo.
 
+# Root folder for all doccraft docs, relative to project root.
+docsDir: docs
+
 story:
   # Subsystem tags, aligned with the conventional-commit scopes used
   # in this repo (`feat(cli):`, `feat(skills):`, `docs(scope):` …).
@@ -40,17 +43,10 @@ story:
     # pattern stays permissive in case a spike story lands later.
     pattern: '^(P\d+(\.\d+)?|[a-z][a-z0-9-]+)$'
 
-adr:
-  path: docs/adr
-
 queue:
-  path: docs/queue.md
   tables:
     suggestedOrder: Suggested order
     platformSpikes: Platform spikes
-
-backlog:
-  path: docs/backlog.md
 
 queueAudit:
   # doccraft stories use `area:` tags almost exclusively; `slice:` falls

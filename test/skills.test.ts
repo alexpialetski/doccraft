@@ -10,6 +10,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, expect, it, afterEach } from 'vitest';
 import {
+  applyDocsDir,
   findStaleCursorSkills,
   formatToolsArg,
   getAvailableRules,
@@ -21,8 +22,10 @@ import {
   MANAGED_HEADER,
   parseToolsArg,
   detectInstalledTools,
+  readDocsDirFromConfig,
   resolveToolSelection,
   scaffoldDocsIfMissing,
+  scaffoldRootConfigIfMissing,
   SUPPORTED_TOOLS,
 } from '../src/utils/skills.js';
 import { installDoccraftSkills } from '../src/commands/init.js';
@@ -263,7 +266,7 @@ describe('installSkills', () => {
       'utf8'
     );
     expect(content).toContain('Managed by **doccraft**');
-    expect(content).toContain('docs/config.yaml');
+    expect(content).toContain('doccraft.yaml');
     // Header must appear after frontmatter closes and before the body title.
     const fmEnd = content.indexOf('\n---\n', 4) + '\n---\n'.length;
     const headerIdx = content.indexOf('Managed by **doccraft**');
@@ -325,6 +328,53 @@ describe('installRules', () => {
     expect(installed).toEqual([]);
     expect(existsSync(path.join(project, '.cursor/rules'))).toBe(false);
   });
+
+  it('substitutes default docsDir when no config.yaml exists', async () => {
+    const project = makeTempProject();
+    await installRules(project, SUPPORTED_TOOLS);
+    const adrs = readFileSync(path.join(project, '.cursor/rules/planning-adrs.mdc'), 'utf8');
+    expect(adrs).toContain('globs: docs/adr/**/*.md');
+    expect(adrs).not.toContain('{{DOCS_DIR}}');
+  });
+
+  it('substitutes custom docsDir from doccraft.yaml into rule globs', async () => {
+    const project = makeTempProject();
+    writeFileSync(path.join(project, 'doccraft.yaml'), 'docsDir: design\n', 'utf8');
+    await installRules(project, SUPPORTED_TOOLS);
+    const adrs = readFileSync(path.join(project, '.cursor/rules/planning-adrs.mdc'), 'utf8');
+    const stories = readFileSync(path.join(project, '.cursor/rules/planning-stories.mdc'), 'utf8');
+    const queue = readFileSync(path.join(project, '.cursor/rules/planning-queue.mdc'), 'utf8');
+    expect(adrs).toContain('globs: design/adr/**/*.md');
+    expect(stories).toContain('globs: design/stories/**/*.md');
+    expect(queue).toContain('globs: design/queue.md');
+    expect(adrs).not.toContain('{{DOCS_DIR}}');
+  });
+});
+
+describe('readDocsDirFromConfig', () => {
+  it('returns "docs" when no doccraft.yaml exists', async () => {
+    const project = makeTempProject();
+    expect(await readDocsDirFromConfig(project)).toBe('docs');
+  });
+
+  it('returns "docs" when doccraft.yaml has no docsDir key', async () => {
+    const project = makeTempProject();
+    writeFileSync(path.join(project, 'doccraft.yaml'), 'story:\n  areas: []\n', 'utf8');
+    expect(await readDocsDirFromConfig(project)).toBe('docs');
+  });
+
+  it('returns the configured docsDir', async () => {
+    const project = makeTempProject();
+    writeFileSync(path.join(project, 'doccraft.yaml'), 'docsDir: planning\n', 'utf8');
+    expect(await readDocsDirFromConfig(project)).toBe('planning');
+  });
+});
+
+describe('applyDocsDir', () => {
+  it('replaces all {{DOCS_DIR}} occurrences', () => {
+    const raw = 'globs: {{DOCS_DIR}}/adr/**/*.md\nSee {{DOCS_DIR}}/stories/';
+    expect(applyDocsDir(raw, 'design')).toBe('globs: design/adr/**/*.md\nSee design/stories/');
+  });
 });
 
 describe('scaffoldDocsIfMissing', () => {
@@ -336,22 +386,8 @@ describe('scaffoldDocsIfMissing', () => {
     expect(created).toContain('docs/queue.md');
     expect(created).toContain('docs/stories/README.md');
     expect(created).toContain('docs/adr/README.md');
-    expect(created).toContain('docs/config.yaml');
-    expect(existsSync(path.join(project, 'docs/backlog.md'))).toBe(true);
-    expect(existsSync(path.join(project, 'docs/config.yaml'))).toBe(true);
-  });
-
-  it('preserves user edits to docs/config.yaml across updates', async () => {
-    const project = makeTempProject();
-    await scaffoldDocsIfMissing(project);
-    const configPath = path.join(project, 'docs/config.yaml');
-    writeFileSync(configPath, 'story:\n  areas: [payments, orders]\n', 'utf8');
-
-    const created = await scaffoldDocsIfMissing(project);
     expect(created).not.toContain('docs/config.yaml');
-    expect(readFileSync(configPath, 'utf8')).toBe(
-      'story:\n  areas: [payments, orders]\n'
-    );
+    expect(existsSync(path.join(project, 'docs/backlog.md'))).toBe(true);
   });
 
   it('never overwrites user edits to scaffolded files', async () => {
@@ -375,5 +411,23 @@ describe('scaffoldDocsIfMissing', () => {
     expect(created).not.toContain('docs/README.md');
     expect(created).toContain('docs/backlog.md');
     expect(readFileSync(path.join(project, 'docs/README.md'), 'utf8')).toBe('# pre-existing\n');
+  });
+});
+
+describe('scaffoldRootConfigIfMissing', () => {
+  it('creates doccraft.yaml at project root on first run', async () => {
+    const project = makeTempProject();
+    const created = await scaffoldRootConfigIfMissing(project);
+    expect(created).toBe(true);
+    expect(existsSync(path.join(project, 'doccraft.yaml'))).toBe(true);
+    expect(readFileSync(path.join(project, 'doccraft.yaml'), 'utf8')).toContain('docsDir:');
+  });
+
+  it('does not overwrite an existing doccraft.yaml', async () => {
+    const project = makeTempProject();
+    writeFileSync(path.join(project, 'doccraft.yaml'), 'docsDir: planning\n', 'utf8');
+    const created = await scaffoldRootConfigIfMissing(project);
+    expect(created).toBe(false);
+    expect(readFileSync(path.join(project, 'doccraft.yaml'), 'utf8')).toBe('docsDir: planning\n');
   });
 });

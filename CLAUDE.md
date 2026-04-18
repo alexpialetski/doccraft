@@ -41,7 +41,7 @@ pnpm install
 pnpm run dev:cli -- init . --skip-openspec --tools claude,cursor
 ```
 
-That scaffolds [`docs/config.yaml`](docs/config.yaml) if missing, writes
+That scaffolds [`doccraft.yaml`](doccraft.yaml) if missing, writes
 the four skills into `.claude/skills/`, and the three Cursor rule stubs
 into `.cursor/rules/`. No dual-write — `.cursor/skills/` is never
 populated (ADR 007).
@@ -120,6 +120,6 @@ pnpm run dev:cli      # Build + run the local CLI
 - **Cursor 2.4+ required** when Cursor is in the user's tool selection
   (auto-discovers `.claude/skills/`). `doccraft init` prints a
   reminder.
-- **`docs/config.yaml` is user-owned.** Doccraft scaffolds it once and
-  never overwrites. Skill bodies read from it at invocation time with
-  in-skill defaults as fallback (ADR 004).
+- **`doccraft.yaml` is user-owned.** Doccraft scaffolds it once at the
+  project root and never overwrites. Skill bodies read from it at
+  invocation time with in-skill defaults as fallback (ADR 004).

@@ -3,6 +3,7 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import select from '@inquirer/select';
+import { parse as parseYaml } from 'yaml';
 
 /**
  * An AI tool that consumes Agent Skills from `{tool.skillsDir}/skills/<name>/SKILL.md`.
@@ -31,6 +32,7 @@ const PACKAGE_ROOT = path.resolve(path.dirname(__filename), '..', '..');
 export const TEMPLATES_SKILLS_DIR = path.join(PACKAGE_ROOT, 'templates', 'skills');
 export const TEMPLATES_RULES_DIR = path.join(PACKAGE_ROOT, 'templates', 'rules');
 export const TEMPLATES_DOCS_DIR = path.join(PACKAGE_ROOT, 'templates', 'docs');
+export const TEMPLATES_ROOT_CONFIG = path.join(PACKAGE_ROOT, 'templates', 'doccraft.yaml');
 
 /**
  * A skill template on disk, ready to be installed into a project.
@@ -52,13 +54,11 @@ export interface RuleTemplate {
 /**
  * One-line header injected into every generated skill and rule file so users
  * who open them know the file is managed by `doccraft update` and any edits
- * will be overwritten on the next run. Project-specific vocabulary will move
- * to docs/config.yaml in a planned follow-up change so customisations survive
- * update cycles.
+ * will be overwritten on the next run.
  */
 export const MANAGED_HEADER =
   '> Managed by **doccraft** — `doccraft update` regenerates this file. ' +
-  'Local edits will be overwritten. See `docs/config.yaml` to override ' +
+  'Local edits will be overwritten. See `doccraft.yaml` to override ' +
   'project-specific vocabulary and paths without touching this file.\n\n';
 
 /**
@@ -238,6 +238,30 @@ export interface InstalledSkill {
 }
 
 /**
+ * Reads `docsDir` from `doccraft.yaml` at the project root. Defaults to
+ * `'docs'`. Used to bake the docs root into skills and Cursor rule globs at
+ * install time — Cursor evaluates .mdc frontmatter statically so the value
+ * must be substituted when the file is written rather than read at runtime.
+ */
+export async function readDocsDirFromConfig(projectPath: string): Promise<string> {
+  const configPath = path.join(projectPath, 'doccraft.yaml');
+  if (!existsSync(configPath)) return 'docs';
+
+  try {
+    const raw = await readFile(configPath, 'utf8');
+    const cfg = parseYaml(raw) as Record<string, unknown>;
+    const val = cfg['docsDir'];
+    return typeof val === 'string' && val.trim().length > 0 ? val.trim() : 'docs';
+  } catch {
+    return 'docs';
+  }
+}
+
+export function applyDocsDir(raw: string, docsDir: string): string {
+  return raw.replace(/\{\{DOCS_DIR\}\}/g, docsDir);
+}
+
+/**
  * The single canonical install target for SKILL.md writes.
  *
  * ADR 007: `.claude/skills/` is the de facto canonical Agent Skills location
@@ -294,9 +318,11 @@ export interface InstalledRule {
 export async function installSkills(
   projectPath: string,
   tools: readonly SkillTool[],
-  skills?: readonly SkillTemplate[]
+  skills?: readonly SkillTemplate[],
+  docsDir?: string
 ): Promise<InstalledSkill[]> {
   const available = skills ?? (await getAvailableSkills());
+  const effectiveDocsDir = docsDir ?? (await readDocsDirFromConfig(projectPath));
   const installed: InstalledSkill[] = [];
 
   for (const tool of tools) {
@@ -304,7 +330,8 @@ export async function installSkills(
 
     for (const skill of available) {
       const raw = await readFile(skill.skillFilePath, 'utf8');
-      const body = injectManagedHeader(raw);
+      const substituted = applyDocsDir(raw, effectiveDocsDir);
+      const body = injectManagedHeader(substituted);
       const targetDir = path.join(toolSkillsRoot, skill.name);
       const targetPath = path.join(targetDir, 'SKILL.md');
 
@@ -325,11 +352,13 @@ export async function installSkills(
 export async function installRules(
   projectPath: string,
   tools: readonly SkillTool[],
-  rules?: readonly RuleTemplate[]
+  rules?: readonly RuleTemplate[],
+  docsDir?: string
 ): Promise<InstalledRule[]> {
   const available = rules ?? (await getAvailableRules());
   if (available.length === 0) return [];
 
+  const effectiveDocsDir = docsDir ?? (await readDocsDirFromConfig(projectPath));
   const installed: InstalledRule[] = [];
 
   for (const tool of tools) {
@@ -340,7 +369,8 @@ export async function installRules(
 
     for (const rule of available) {
       const raw = await readFile(rule.ruleFilePath, 'utf8');
-      const body = injectManagedHeader(raw);
+      const substituted = applyDocsDir(raw, effectiveDocsDir);
+      const body = injectManagedHeader(substituted);
       const targetPath = path.join(targetDir, rule.fileName);
       await writeFile(targetPath, body, 'utf8');
       installed.push({ rule: rule.fileName, tool: tool.id, targetPath });
@@ -392,4 +422,18 @@ export async function scaffoldDocsIfMissing(projectPath: string): Promise<string
   }
 
   return created;
+}
+
+/**
+ * Writes `doccraft.yaml` to the project root if it does not already exist.
+ * Config lives at the root (not inside docs/) so changing `docsDir` never
+ * creates a chicken-and-egg problem with config discovery.
+ */
+export async function scaffoldRootConfigIfMissing(projectPath: string): Promise<boolean> {
+  const target = path.join(projectPath, 'doccraft.yaml');
+  if (existsSync(target)) return false;
+  if (!existsSync(TEMPLATES_ROOT_CONFIG)) return false;
+  const body = await readFile(TEMPLATES_ROOT_CONFIG, 'utf8');
+  await writeFile(target, body, 'utf8');
+  return true;
 }

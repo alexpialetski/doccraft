@@ -1,12 +1,12 @@
 ---
-description: Planning story conventions for docs/stories — follow doccraft-story
-globs: docs/stories/**/*.md
+description: Planning story conventions for {{DOCS_DIR}}/stories — follow doccraft-story
+globs: {{DOCS_DIR}}/stories/**/*.md
 alwaysApply: false
 ---
 
 # Planning stories
 
-When editing files under `docs/stories/`, follow the `doccraft-story` skill
+When editing files under `{{DOCS_DIR}}/stories/`, follow the `doccraft-story` skill
 for the YAML frontmatter contract (`id`, `title`, `status`, `impact`,
 `urgency`, `tags`, `openspec`, `depends_on`, …), tag vocabulary
 (`area:` / `slice:` / `theme:` prefixes), and enum values.
