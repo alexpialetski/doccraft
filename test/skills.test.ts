@@ -10,6 +10,8 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, expect, it, afterEach } from 'vitest';
 import {
+  filterSkillTargets,
+  findStaleCursorSkills,
   formatToolsArg,
   getAvailableRules,
   getAvailableSkills,
@@ -22,6 +24,7 @@ import {
   resolveToolSelection,
   scaffoldDocsIfMissing,
   SUPPORTED_TOOLS,
+  validateConsolidate,
 } from '../src/utils/skills.js';
 
 const tempDirs: string[] = [];
@@ -131,6 +134,70 @@ describe('resolveToolSelection', () => {
   });
 });
 
+describe('validateConsolidate', () => {
+  it('accepts when both Claude Code and Cursor are selected', () => {
+    expect(() => validateConsolidate('claude,cursor')).not.toThrow();
+    expect(() => validateConsolidate('cursor,claude')).not.toThrow();
+  });
+
+  it('throws when only Claude Code is selected', () => {
+    expect(() => validateConsolidate('claude')).toThrow(/requires both/);
+  });
+
+  it('throws when only Cursor is selected', () => {
+    expect(() => validateConsolidate('cursor')).toThrow(/requires both/);
+  });
+
+  it('throws when "none" is selected (zero tools)', () => {
+    expect(() => validateConsolidate('none')).toThrow(/requires both/);
+  });
+
+  it('error message tells the user how to fix it', () => {
+    try {
+      validateConsolidate('claude');
+    } catch (err) {
+      expect((err as Error).message).toContain('--tools claude,cursor');
+    }
+  });
+});
+
+describe('filterSkillTargets', () => {
+  it('returns every tool when consolidate is false (dual-write preserved)', () => {
+    const filtered = filterSkillTargets(SUPPORTED_TOOLS, false);
+    expect(filtered.map((t) => t.id)).toEqual(SUPPORTED_TOOLS.map((t) => t.id));
+  });
+
+  it('keeps only Claude Code when consolidate is true', () => {
+    const filtered = filterSkillTargets(SUPPORTED_TOOLS, true);
+    expect(filtered.map((t) => t.id)).toEqual(['claude']);
+  });
+});
+
+describe('findStaleCursorSkills', () => {
+  it('returns doccraft-owned skill dirs under .cursor/skills/', async () => {
+    const project = makeTempProject();
+    mkdirSync(path.join(project, '.cursor/skills/doccraft-story'), { recursive: true });
+    mkdirSync(path.join(project, '.cursor/skills/doccraft-adr'), { recursive: true });
+    mkdirSync(path.join(project, '.cursor/skills/some-other-skill'), { recursive: true });
+
+    const stale = await findStaleCursorSkills(project);
+    expect(stale).toEqual(['doccraft-adr', 'doccraft-story']);
+  });
+
+  it('returns [] when .cursor/skills/ does not exist', async () => {
+    const project = makeTempProject();
+    const stale = await findStaleCursorSkills(project);
+    expect(stale).toEqual([]);
+  });
+
+  it('returns [] when .cursor/skills/ exists but has no doccraft dirs', async () => {
+    const project = makeTempProject();
+    mkdirSync(path.join(project, '.cursor/skills/something-else'), { recursive: true });
+    const stale = await findStaleCursorSkills(project);
+    expect(stale).toEqual([]);
+  });
+});
+
 describe('formatToolsArg', () => {
   it('renders tool ids as their human-readable names', () => {
     expect(formatToolsArg('claude')).toBe('Claude Code');
@@ -168,6 +235,19 @@ describe('detectInstalledTools', () => {
     mkdirSync(path.join(project, '.claude'), { recursive: true });
     const detected = await detectInstalledTools(project);
     expect(detected.map((t) => t.id)).toEqual(['claude']);
+  });
+});
+
+describe('installSkills + filterSkillTargets (consolidate behaviour)', () => {
+  it('writes only to .claude/skills/ when consolidate filters the target list', async () => {
+    const project = makeTempProject();
+    const consolidatedTargets = filterSkillTargets(SUPPORTED_TOOLS, true);
+    await installSkills(project, consolidatedTargets);
+
+    expect(existsSync(path.join(project, '.claude/skills/doccraft-story/SKILL.md'))).toBe(true);
+    expect(existsSync(path.join(project, '.cursor/skills/doccraft-story/SKILL.md'))).toBe(false);
+    // Full .cursor/skills/ tree should not be created at all.
+    expect(existsSync(path.join(project, '.cursor/skills'))).toBe(false);
   });
 });
 
