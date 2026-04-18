@@ -1,5 +1,11 @@
 # doccraft
 
+## 0.1.9
+
+### Patch Changes
+
+- [`357b851`](https://github.com/alexpialetski/doccraft/commit/357b85182daf00c69122dd5601491ed6679feb3f) - Link the CHANGELOG file from the README. Also serves as the first end-to-end test of the automated release pipeline (Changesets → Version PR → npm publish).
+
 ## 0.1.8
 
 ### Patch Changes
