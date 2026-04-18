@@ -16,6 +16,10 @@ Skills bundled so far:
 
 Each skill lands identically in `.claude/skills/<name>/SKILL.md` and `.cursor/skills/<name>/SKILL.md`; both tools consume the same format.
 
+Cursor users additionally get three glob-scoped rule stubs under `.cursor/rules/` (`planning-stories.mdc`, `planning-adrs.mdc`, `planning-queue.mdc`) that auto-attach when editing the matching docs and point at the installed skills. Claude Code has no equivalent rules primitive — its skills trigger on description match, so no rule stubs are installed there.
+
+`doccraft init` also scaffolds starter `docs/README.md`, `docs/backlog.md`, `docs/queue.md`, `docs/stories/README.md`, and `docs/adr/README.md`. These are seeded once on first install — `doccraft update` never overwrites them, so your actual backlog rows and project description stay intact across updates.
+
 ## Install
 
 ```bash

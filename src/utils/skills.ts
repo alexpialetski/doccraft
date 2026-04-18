@@ -6,19 +6,21 @@ import { fileURLToPath } from 'node:url';
 /**
  * An AI tool that consumes Agent Skills from `{tool.skillsDir}/skills/<name>/SKILL.md`.
  *
- * doccraft currently targets Claude Code and Cursor. Additional tools from
- * OpenSpec's catalog (Cline, Codex, Windsurf, ...) can be added later by
- * extending this list — the install pipeline itself is tool-agnostic.
+ * `rulesDir` is optional and only set for tools that support glob-based auto-
+ * attaching rule files (currently Cursor's `.cursor/rules/*.mdc`). Claude Code
+ * has no equivalent primitive — skills trigger on description match, so rule
+ * stubs would be redundant for it.
  */
 export interface SkillTool {
   id: string;
   name: string;
   skillsDir: string;
+  rulesDir?: string;
 }
 
 export const SUPPORTED_TOOLS: readonly SkillTool[] = [
   { id: 'claude', name: 'Claude Code', skillsDir: '.claude' },
-  { id: 'cursor', name: 'Cursor', skillsDir: '.cursor' },
+  { id: 'cursor', name: 'Cursor', skillsDir: '.cursor', rulesDir: '.cursor/rules' },
 ];
 
 const __filename = fileURLToPath(import.meta.url);
@@ -26,6 +28,8 @@ const __filename = fileURLToPath(import.meta.url);
 // The templates/ directory ships via the `files` entry in package.json.
 const PACKAGE_ROOT = path.resolve(path.dirname(__filename), '..', '..');
 export const TEMPLATES_SKILLS_DIR = path.join(PACKAGE_ROOT, 'templates', 'skills');
+export const TEMPLATES_RULES_DIR = path.join(PACKAGE_ROOT, 'templates', 'rules');
+export const TEMPLATES_DOCS_DIR = path.join(PACKAGE_ROOT, 'templates', 'docs');
 
 /**
  * A skill template on disk, ready to be installed into a project.
@@ -33,6 +37,39 @@ export const TEMPLATES_SKILLS_DIR = path.join(PACKAGE_ROOT, 'templates', 'skills
 export interface SkillTemplate {
   name: string;
   skillFilePath: string;
+}
+
+/**
+ * A rule template on disk, installed only into tools that support glob-based
+ * rule files.
+ */
+export interface RuleTemplate {
+  fileName: string;
+  ruleFilePath: string;
+}
+
+/**
+ * One-line header injected into every generated skill and rule file so users
+ * who open them know the file is managed by `doccraft update` and any edits
+ * will be overwritten on the next run. Project-specific vocabulary will move
+ * to docs/config.yaml in a planned follow-up change so customisations survive
+ * update cycles.
+ */
+export const MANAGED_HEADER =
+  '> Managed by **doccraft** — `doccraft update` regenerates this file. ' +
+  'Local edits will be overwritten; project-specific vocabulary will move ' +
+  'to `docs/config.yaml` in a planned follow-up change.\n\n';
+
+/**
+ * Inserts MANAGED_HEADER between YAML frontmatter and body. Both skill
+ * `.md` and Cursor rule `.mdc` files use the same `---\n...\n---\n` fence,
+ * so a single injector handles both.
+ */
+export function injectManagedHeader(raw: string): string {
+  const match = raw.match(/^(---\n[\s\S]*?\n---\n)([\s\S]*)$/);
+  if (!match) return MANAGED_HEADER + raw;
+  const body = match[2].startsWith('\n') ? match[2].slice(1) : match[2];
+  return match[1] + '\n' + MANAGED_HEADER + body;
 }
 
 /**
@@ -57,14 +94,30 @@ export async function getAvailableSkills(): Promise<SkillTemplate[]> {
 }
 
 /**
+ * Scans `templates/rules/` for `.mdc` rule files.
+ */
+export async function getAvailableRules(): Promise<RuleTemplate[]> {
+  if (!existsSync(TEMPLATES_RULES_DIR)) {
+    return [];
+  }
+
+  const entries = await readdir(TEMPLATES_RULES_DIR, { withFileTypes: true });
+  const rules: RuleTemplate[] = [];
+
+  for (const entry of entries) {
+    if (!entry.isFile()) continue;
+    if (!entry.name.endsWith('.mdc')) continue;
+    rules.push({
+      fileName: entry.name,
+      ruleFilePath: path.join(TEMPLATES_RULES_DIR, entry.name),
+    });
+  }
+
+  return rules.sort((a, b) => a.fileName.localeCompare(b.fileName));
+}
+
+/**
  * Parses a --tools argument into a list of SkillTools.
- *
- * - `"all"` → every supported tool.
- * - `"none"` → empty list (skip skill install entirely).
- * - `"claude,cursor"` → named tools, validated against SUPPORTED_TOOLS.
- *
- * Unknown tool ids throw rather than silently skipping, so the user notices
- * typos immediately.
  */
 export function parseToolsArg(raw: string): SkillTool[] {
   const trimmed = raw.trim();
@@ -101,9 +154,6 @@ export function parseToolsArg(raw: string): SkillTool[] {
 /**
  * Detects which supported tools are already set up in the project by checking
  * for their config directory (e.g. `.claude/`, `.cursor/`).
- *
- * Used when the user did not pass --tools explicitly. By the time this runs,
- * `openspec init` has usually created these directories already.
  */
 export async function detectInstalledTools(projectPath: string): Promise<SkillTool[]> {
   const detected: SkillTool[] = [];
@@ -127,13 +177,16 @@ export interface InstalledSkill {
   targetPath: string;
 }
 
+export interface InstalledRule {
+  rule: string;
+  tool: string;
+  targetPath: string;
+}
+
 /**
- * Installs each skill into each tool's skills directory.
- *
- * Writes identical content — Claude Code and Cursor both consume the same
- * `SKILL.md` format, so the file is byte-equal across tools. Any existing
- * file at the target path is overwritten; that is intentional for both
- * `doccraft init` (first-time install) and `doccraft update` (refresh).
+ * Installs each skill into each tool's skills directory. File content is
+ * identical across tools; `MANAGED_HEADER` is injected so users know the
+ * file is regenerated by `doccraft update`.
  */
 export async function installSkills(
   projectPath: string,
@@ -147,7 +200,8 @@ export async function installSkills(
     const toolSkillsRoot = path.join(projectPath, tool.skillsDir, 'skills');
 
     for (const skill of available) {
-      const body = await readFile(skill.skillFilePath, 'utf8');
+      const raw = await readFile(skill.skillFilePath, 'utf8');
+      const body = injectManagedHeader(raw);
       const targetDir = path.join(toolSkillsRoot, skill.name);
       const targetPath = path.join(targetDir, 'SKILL.md');
 
@@ -159,4 +213,80 @@ export async function installSkills(
   }
 
   return installed;
+}
+
+/**
+ * Installs Cursor-style rule stubs into tools that advertise a `rulesDir`.
+ * Claude Code has no equivalent primitive, so rules are skipped for it.
+ */
+export async function installRules(
+  projectPath: string,
+  tools: readonly SkillTool[],
+  rules?: readonly RuleTemplate[]
+): Promise<InstalledRule[]> {
+  const available = rules ?? (await getAvailableRules());
+  if (available.length === 0) return [];
+
+  const installed: InstalledRule[] = [];
+
+  for (const tool of tools) {
+    if (!tool.rulesDir) continue;
+
+    const targetDir = path.join(projectPath, tool.rulesDir);
+    await mkdir(targetDir, { recursive: true });
+
+    for (const rule of available) {
+      const raw = await readFile(rule.ruleFilePath, 'utf8');
+      const body = injectManagedHeader(raw);
+      const targetPath = path.join(targetDir, rule.fileName);
+      await writeFile(targetPath, body, 'utf8');
+      installed.push({ rule: rule.fileName, tool: tool.id, targetPath });
+    }
+  }
+
+  return installed;
+}
+
+async function walkTemplateFiles(root: string): Promise<string[]> {
+  const results: string[] = [];
+
+  async function walk(current: string, relBase: string): Promise<void> {
+    const entries = await readdir(current, { withFileTypes: true });
+    for (const entry of entries) {
+      const rel = relBase ? path.posix.join(relBase, entry.name) : entry.name;
+      const absolute = path.join(current, entry.name);
+      if (entry.isDirectory()) {
+        await walk(absolute, rel);
+      } else if (entry.isFile()) {
+        results.push(rel);
+      }
+    }
+  }
+
+  await walk(root, '');
+  return results;
+}
+
+/**
+ * Seeds `docs/` with starter files that the skills reference (README,
+ * backlog.md, queue.md, stories/README.md, adr/README.md). Skips any file
+ * that already exists — `doccraft update` must never clobber a user's
+ * backlog rows or their project description.
+ */
+export async function scaffoldDocsIfMissing(projectPath: string): Promise<string[]> {
+  if (!existsSync(TEMPLATES_DOCS_DIR)) return [];
+
+  const relativePaths = await walkTemplateFiles(TEMPLATES_DOCS_DIR);
+  const created: string[] = [];
+
+  for (const rel of relativePaths) {
+    const targetPath = path.join(projectPath, 'docs', rel);
+    if (existsSync(targetPath)) continue;
+    const body = await readFile(path.join(TEMPLATES_DOCS_DIR, rel), 'utf8');
+    await mkdir(path.dirname(targetPath), { recursive: true });
+    await writeFile(targetPath, body, 'utf8');
+    created.push(path.posix.join('docs', rel));
+  }
+
+  return created;
 }
