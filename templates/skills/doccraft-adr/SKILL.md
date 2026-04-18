@@ -2,11 +2,11 @@
 name: doccraft-adr
 description: >-
   Author or update architecture decision records (a.k.a. ADRs, design
-  decisions, architecture decision log entries) under docs/adr/ as
+  decisions, architecture decision log entries) under {{DOCS_DIR}}/adr/ as
   NNN-kebab-case.md with Nygard-style Context, Decision, Consequences, and
   an explicit Status. Use whenever the user is recording a new decision,
   superseding an old one, capturing a rejected option so the team doesn't
-  revisit it, or editing anything under docs/adr/ — even if they call it a
+  revisit it, or editing anything under {{DOCS_DIR}}/adr/ — even if they call it a
   design note, tech decision, or RFC outcome.
 ---
 
@@ -22,20 +22,18 @@ Not every brainstorm needs an ADR — only decisions you want **git history and 
 
 ## Configuration
 
-Read `docs/config.yaml` at invocation. The `adr:` section tells this
-skill where ADRs live. If the file is missing or `adr:` is absent, use
-the default.
+Read `doccraft.yaml` at invocation. If the file is missing, use the
+default below.
 
 Relevant keys:
 
-- `adr.path` — ADR directory, relative to project root. Default:
-  `docs/adr`. Use this when the project stores ADRs somewhere else (e.g.
-  `docs/decisions/` or `architecture/adr/`).
+- `docsDir` — root folder for all docs, relative to project root. Default:
+  `docs`. ADRs live at `{docsDir}/adr/`.
 
 ## File location and naming
 
-- Path: **`docs/adr/NNN-short-slug.md`** — three-digit zero-padded index, kebab-case slug (e.g. `001-managed-postgres.md`).
-- **`docs/adr/README.md`** is the index — do not treat it as an ADR; no `NNN-` prefix, no required Nygard sections.
+- Path: **`{{DOCS_DIR}}/adr/NNN-short-slug.md`** — three-digit zero-padded index, kebab-case slug (e.g. `001-managed-postgres.md`).
+- **`{{DOCS_DIR}}/adr/README.md`** is the index — do not treat it as an ADR; no `NNN-` prefix, no required Nygard sections.
 - Pick the **next** unused number. Never renumber published ADRs; add a new ADR that **supersedes** instead.
 
 ## Document structure (Nygard-style)
@@ -92,7 +90,7 @@ Plain markdown with a **Status:** line is equally acceptable.
 
 ## Linking to stories
 
-- **Accepted ADR → implementation:** add a story under `docs/stories/` and
+- **Accepted ADR → implementation:** add a story under `{{DOCS_DIR}}/stories/` and
   reference the ADR filename in the story's `adr_refs` frontmatter field
   (see `doccraft-story` if installed).
 - **Story → ADR:** list ADR filenames in the story's `adr_refs` when the

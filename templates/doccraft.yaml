@@ -9,8 +9,13 @@
 # value without touching its SKILL.md. That's the point — your vocabulary
 # survives `doccraft update`.
 
+# Root folder for all doccraft docs, relative to project root.
+# Change this if your docs don't live under `docs/`. Re-run `doccraft update`
+# after changing it so Cursor rule globs are regenerated with the new path.
+docsDir: docs
+
 story:
-  # Tag vocabulary. Stories in docs/stories/ use prefixed tags
+  # Tag vocabulary. Stories in <docsDir>/stories/ use prefixed tags
   # (area:/slice:/theme:); these lists name the valid values under each
   # prefix for this project.
   areas: [api, cli, auth, data, infra, schemas]
@@ -26,23 +31,13 @@ story:
     # "spike-foo") by default.
     pattern: '^(P\d+(\.\d+)?|[a-z][a-z0-9-]+)$'
 
-adr:
-  # ADR directory, relative to project root.
-  path: docs/adr
-
 queue:
-  # Working queue file.
-  path: docs/queue.md
   # Heading text for the two tables `doccraft-queue-audit` reads. Rename
   # here if your project uses different headings — the skill will find
   # tables by heading text, not position.
   tables:
     suggestedOrder: Suggested order
     platformSpikes: Platform spikes
-
-backlog:
-  # Full backlog file.
-  path: docs/backlog.md
 
 queueAudit:
   # Priority order for the lane heuristic in `doccraft-queue-audit`'s

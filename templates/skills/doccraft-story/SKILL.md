@@ -2,11 +2,11 @@
 name: doccraft-story
 description: >-
   Author or update product stories (a.k.a. planning docs, backlog items,
-  tickets, specs) as Markdown under docs/stories/ with a YAML frontmatter
+  tickets, specs) as Markdown under {{DOCS_DIR}}/stories/ with a YAML frontmatter
   contract (id, status, impact, urgency, depends_on, tags, openspec). Use this
   whenever the user is creating a story, reprioritising work, writing
   acceptance criteria, linking a story to OpenSpec or an ADR, or editing
-  anything under docs/stories/ — even if they call it a spec, ticket, backlog
+  anything under {{DOCS_DIR}}/stories/ — even if they call it a spec, ticket, backlog
   row, or planning doc.
 ---
 
@@ -14,22 +14,24 @@ description: >-
 
 ## When to use
 
-- Creating a new story in `docs/stories/`.
+- Creating a new story in `{{DOCS_DIR}}/stories/`.
 - Updating status, acceptance criteria, tags, or `openspec` on an existing story.
-- When closing a story: consider updating `docs/queue.md` and the **Status**
-  column in `docs/backlog.md`. After **adding** a story or changing
+- When closing a story: consider updating `{{DOCS_DIR}}/queue.md` and the **Status**
+  column in `{{DOCS_DIR}}/backlog.md`. After **adding** a story or changing
   **`depends_on`**, invoke the `doccraft-queue-audit` skill in the same
   turn to reconcile the queue graph.
 
 ## Configuration
 
-Read `docs/config.yaml` at invocation. The `story:` section is this
+Read `doccraft.yaml` at invocation. The `story:` section is this
 skill's customisation surface; override the defaults in the tables below
 with the values found there. If the file is missing or the `story:`
 section is absent, use the defaults below as-is.
 
 Relevant keys:
 
+- `docsDir` — root folder for all docs, relative to project root. Default:
+  `docs`. Stories live at `{docsDir}/stories/`.
 - `story.areas`, `story.slices`, `story.themes` — tag vocabulary lists
   (replace the default `area:` / `slice:` / `theme:` values).
 - `story.id.tiers` — filename tier prefixes like `p0`…`p4`. Empty list
@@ -38,13 +40,13 @@ Relevant keys:
   frontmatter. Use this to validate new stories and to normalise
   `depends_on` typos. Default: `^(P\d+(\.\d+)?|[a-z][a-z0-9-]+)$`.
 
-Adding to a list in `docs/config.yaml` teaches the skill a new valid
+Adding to a list in `doccraft.yaml` teaches the skill a new valid
 value without touching this file (which `doccraft update` regenerates).
 That is the intended way to extend vocabulary for a project.
 
 ## File location and naming
 
-- Path: **`docs/stories/<slug>.md`** — kebab-case slug.
+- Path: **`{{DOCS_DIR}}/stories/<slug>.md`** — kebab-case slug.
 - **P-tier stories** (aligned with a prioritised backlog): use
   `p{tier}-<topic>.md` where tier is `p0`…`p4`. The ordinal (e.g. `P0.3`)
   lives in YAML `id`, not in the filename. Examples:
@@ -58,7 +60,7 @@ Use valid YAML between `---` delimiters at the top of the file.
 
 | Field | Required | Values / notes |
 |-------|----------|----------------|
-| `id` | yes | Stable, unique id across stories. `P0.3` when aligned to `docs/backlog.md`, or a slug like `story-2026-001`. |
+| `id` | yes | Stable, unique id across stories. `P0.3` when aligned to `{{DOCS_DIR}}/backlog.md`, or a slug like `story-2026-001`. |
 | `title` | yes | Short human-readable title. |
 | `status` | yes | `todo` \| `in_progress` \| `done` — **manual** updates only. |
 | `impact` | yes | `H` (high) \| `M` \| `L` — product or engineering leverage. |
@@ -104,14 +106,14 @@ A story may list several tags, e.g. `area:api`, `area:data`, `theme:performance`
 ### Extending the vocabulary
 
 - If **no** existing `area:`, `slice:`, or `theme:` value fits, and the
-  label will **recur**, add it to the matching list in `docs/config.yaml`
+  label will **recur**, add it to the matching list in `doccraft.yaml`
   (keys `story.areas` / `story.slices` / `story.themes`). Commit the
   config edit together with the first story that uses the new value.
 - **One-off** nuance that will not recur belongs in the body (**Notes**),
   not as a new tag.
 
 Do not edit the tables in this `SKILL.md` directly — `doccraft update`
-regenerates this file and would overwrite the edit. `docs/config.yaml`
+regenerates this file and would overwrite the edit. `doccraft.yaml`
 is the single source of truth for project-specific vocabulary.
 
 ### Invalid examples (do not use)
@@ -167,7 +169,7 @@ OpenSpec recommended because: touches schema + payment service + integration tes
 
 - Move `status` to `in_progress` when you start implementation; `done` when
   shipped or explicitly abandoned (note why in body if abandoned).
-- When reprioritising, consider updating `docs/queue.md` in the same commit
+- When reprioritising, consider updating `{{DOCS_DIR}}/queue.md` in the same commit
   as meaningful story status changes.
 - After creating a story or changing `depends_on`, invoke
   `doccraft-queue-audit` in the same turn so the working queue stays

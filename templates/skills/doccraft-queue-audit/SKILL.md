@@ -2,7 +2,7 @@
 name: doccraft-queue-audit
 description: >-
   Reconcile the dependency graph, pick-next queue, and backlog status across
-  docs/stories/, docs/queue.md, and docs/backlog.md. Use after adding or
+  {{DOCS_DIR}}/stories/, {{DOCS_DIR}}/queue.md, and {{DOCS_DIR}}/backlog.md. Use after adding or
   editing a story (especially one with depends_on), after reshuffling
   priorities, or when the user asks "what can I work on next", "what's
   unblocked", "sanity-check the queue", "check my story dependencies",
@@ -18,7 +18,7 @@ description: >-
 ## When to use
 
 - After **adding** a story, changing **`depends_on`** / **`id`**, or
-  reshuffling priorities and you want a sanity check on `docs/queue.md`.
+  reshuffling priorities and you want a sanity check on `{{DOCS_DIR}}/queue.md`.
 - The user asks "what can I work on next", "what's unblocked",
   "sanity-check the queue", or similar pick-next / dependency questions.
 - The user asks for **parallel-ready batches** ("what can I run in
@@ -31,16 +31,16 @@ decision (use `doccraft-adr`), or proposing artifacts from a chat thread
 
 ## Configuration
 
-Read `docs/config.yaml` at invocation. Several sections feed into this
-skill; every key below has a default in the rest of this body so a
-missing config file is a soft fallback, not an error.
+Read `doccraft.yaml` at invocation. Every key below has a default in the
+rest of this body so a missing config file is a soft fallback, not an error.
 
 Relevant keys:
 
-- `queue.path`, `backlog.path` — file locations. Defaults:
-  `docs/queue.md`, `docs/backlog.md`.
+- `docsDir` — root folder for all docs. Default: `docs`. Stories, queue,
+  and backlog are at `{docsDir}/stories/`, `{docsDir}/queue.md`,
+  `{docsDir}/backlog.md`.
 - `queue.tables.suggestedOrder`, `queue.tables.platformSpikes` — the
-  heading text this skill uses to find the two tables in `queue.path`.
+  heading text this skill uses to find the two tables in the queue file.
   Defaults: `Suggested order`, `Platform spikes`. Rename in config if
   your project uses different headings; the skill matches on heading
   text, not row position.
@@ -57,23 +57,23 @@ Relevant keys:
 ## What this skill reads and writes
 
 **Reads:**
-- `docs/stories/*.md` — YAML frontmatter (`id`, `status`, `impact`,
+- `{{DOCS_DIR}}/stories/*.md` — YAML frontmatter (`id`, `status`, `impact`,
   `urgency`, `depends_on`, `tags`, `openspec`, `roadmap_ref`, optional
   `openspec_change`).
-- `docs/queue.md` — the *Suggested order* table, plus *Platform spikes*
+- `{{DOCS_DIR}}/queue.md` — the *Suggested order* table, plus *Platform spikes*
   when parallel waves are in scope.
-- `docs/backlog.md` — the *Story files* table and the *Status* column.
+- `{{DOCS_DIR}}/backlog.md` — the *Story files* table and the *Status* column.
 
 **Writes (Agent mode only, on objective fixes):**
-- `docs/queue.md` — reorder rows; drop rows for shipped stories.
-- `docs/backlog.md` — update the *Status* column.
-- `docs/stories/*.md` — narrow YAML edits (see Auto-apply rule 4).
+- `{{DOCS_DIR}}/queue.md` — reorder rows; drop rows for shipped stories.
+- `{{DOCS_DIR}}/backlog.md` — update the *Status* column.
+- `{{DOCS_DIR}}/stories/*.md` — narrow YAML edits (see Auto-apply rule 4).
 
 ## Input
 
 The user may paste a one- to three-line briefing (what changed, optional
 scope). If they omit it, infer from the repo: read every file under
-`docs/stories/` (skip `README.md`) and `docs/queue.md`.
+`{{DOCS_DIR}}/stories/` (skip `README.md`) and `{{DOCS_DIR}}/queue.md`.
 
 ---
 
@@ -102,7 +102,7 @@ reconciliation that any auditor would make the same way:
    bottom row from the next obvious pick in the same band (main vs.
    platform spikes).
 2. **Backlog status drift.** For a `roadmap_ref` whose story file is
-   `status: done`, if the matching **Status** cell in `docs/backlog.md`
+   `status: done`, if the matching **Status** cell in `{{DOCS_DIR}}/backlog.md`
    still reads `planned` or equivalent, update it to the project's
    established "done" phrasing. Do not mark **done** in the backlog when
    the story is still `todo` or `in_progress`.
@@ -126,7 +126,7 @@ reconciliation that any auditor would make the same way:
   stop and report the full plan first, then wait for the user to
   confirm. Large changes should be a human decision.
 - **Working-tree awareness.** If the user has uncommitted changes in
-  `docs/queue.md`, `docs/backlog.md`, or any story file you would
+  `{{DOCS_DIR}}/queue.md`, `{{DOCS_DIR}}/backlog.md`, or any story file you would
   touch, report the planned changes first and let the user decide.
   Do not overwrite in-progress work.
 - **Commits.** Do not create commits unless the user asks. Describe
@@ -165,7 +165,7 @@ the fields that matter are:
   nodes remain scheduling candidates.
 - `impact` / `urgency` — tie-breakers once dependency constraints are
   satisfied.
-- `roadmap_ref` — ties the story to its `docs/backlog.md` row for the
+- `roadmap_ref` — ties the story to its `{{DOCS_DIR}}/backlog.md` row for the
   backlog-drift check.
 
 ## Graph checks
@@ -186,7 +186,7 @@ Precedence: when story `urgency` and `depends_on` disagree,
 **unfinished prerequisites win** unless the queue row explicitly
 documents accepted debt in its Notes column.
 
-1. Parse the *Suggested order* table in `docs/queue.md`. Story links
+1. Parse the *Suggested order* table in `{{DOCS_DIR}}/queue.md`. Story links
    and id labels appear in the first column.
 2. For each queued row with id `Q`, every `d` in `depends_on` must
    either be `done` or appear **above** `Q` (or be explicitly
@@ -225,11 +225,11 @@ in mind — they are the implicit contract the skill enforces:
    a story, update the story YAML in the same change — otherwise the
    table and frontmatter drift apart and the next audit will thrash.
 4. **Backlog.** When a row ships or is dropped, update the **Status**
-   column for that id in `docs/backlog.md`. New queued items need a
+   column for that id in `{{DOCS_DIR}}/backlog.md`. New queued items need a
    story file and a row in the backlog's *Story files* table.
 5. **Planned-tier coverage.** Every `planned` row in
-   `docs/backlog.md` should have a matching file under
-   `docs/stories/` and an entry in the *Story files* table.
+   `{{DOCS_DIR}}/backlog.md` should have a matching file under
+   `{{DOCS_DIR}}/stories/` and an entry in the *Story files* table.
    Reconcile periodically.
 
 ---
@@ -288,7 +288,7 @@ graph.
 **Proposal output.** For each candidate story, emit a compact row:
 - `id`, `title`, `status`, `lane` (area/slice), `openspec`
 - Prerequisites — list `depends_on` with target status
-- Link — `docs/stories/<file>.md`
+- Link — `{{DOCS_DIR}}/stories/<file>.md`
 - **Batch id** (Wave 1, Wave 2, …)
 
 End with a short **Problems** list when any id is missing, cyclic, or
@@ -311,11 +311,11 @@ from story Y."]
 
 ## References
 
-- `docs/queue.md` — pick-next tables.
-- `docs/backlog.md` — full P-tier tables and Status column.
+- `{{DOCS_DIR}}/queue.md` — pick-next tables.
+- `{{DOCS_DIR}}/backlog.md` — full P-tier tables and Status column.
 - `doccraft-story` — field contract for story frontmatter.
 
 > Project-specific vocabulary (tiers, area/slice tags, queue-table
-> headings, scale thresholds) lives in `docs/config.yaml` — the
+> headings, scale thresholds) lives in `doccraft.yaml` — the
 > **Configuration** section above lists the keys this skill reads. The
 > tables in this body are defaults used when no config is present.

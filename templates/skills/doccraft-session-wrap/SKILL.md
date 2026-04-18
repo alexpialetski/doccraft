@@ -3,7 +3,7 @@ name: doccraft-session-wrap
 description: >-
   After a design, research, business, or prioritisation thread, evaluate
   whether the conversation produced durable insight worth capturing in
-  docs/, then propose only the artifacts that are clearly justified (ADR,
+  {{DOCS_DIR}}/, then propose only the artifacts that are clearly justified (ADR,
   research note, reference doc, business update, story, backlog/queue
   edit). Use when the user says "wrap this session", "propose docs
   artifacts", "what should we capture", "summarize this into docs",
@@ -29,38 +29,36 @@ document.
 
 ## Configuration
 
-Read `docs/config.yaml` at invocation. The `sessionWrap.capture:` block
+Read `doccraft.yaml` at invocation. The `sessionWrap.capture:` block
 controls which artifact categories are in scope for this project — skip
 rows entirely in the proposals table when their category is disabled.
 
 Relevant keys:
 
+- `docsDir` — root folder for all docs. Default: `docs`. All artifact
+  paths below are relative to `{docsDir}/`.
 - `sessionWrap.capture.research` — default `true`.
 - `sessionWrap.capture.reference` — default `true`.
 - `sessionWrap.capture.business` — default `false`. Projects that track
-  strategy under `docs/business/` set this to `true`; most projects
+  strategy under `{docsDir}/business/` set this to `true`; most projects
   leave it off.
 
-If `docs/config.yaml` is missing, apply the defaults above. The `ADR`,
+If `doccraft.yaml` is missing, apply the defaults above. The `ADR`,
 `Story`, and `Backlog / queue` categories are always in scope — they
 are the load-bearing set.
 
-Also honour path overrides from other sections when proposing file
-locations: `adr.path` (default `docs/adr`), `queue.path`
-(default `docs/queue.md`), `backlog.path` (default `docs/backlog.md`).
-
 ## Docs map (where things go)
 
-Authoritative overview, if the project has one: `docs/README.md`.
+Authoritative overview, if the project has one: `{{DOCS_DIR}}/README.md`.
 
 | Kind | Path | Use for |
 |------|------|--------|
-| **ADR** | `docs/adr/NNN-slug.md` | A **decision** to freeze (chosen option, explicit deferral, or rejected approach you do not want re-litigated). See `doccraft-adr` if installed. |
-| **Research** | `docs/research/<topic>.md` | **Exploration / comparison / notes** (tools, papers, datasets) without a single "we decided X" — synthesis for humans and future agents. |
-| **Reference** | `docs/reference/<topic>.md` | Long-form **engineering** notes (runbooks, eval harnesses, pricing) that are not framed as an ADR. If the project has a `docs/reference/README.md`, add a link there when adding a new file. |
-| **Business** | `docs/business/<topic>.md` | **Business strategy** — target audience, business model, competitive landscape, marketing, unit economics, legal, launch sequence. Only propose if the project already tracks business docs under `docs/business/`; prefer updating existing topics over creating new ones. |
-| **Story** | `docs/stories/<slug>.md` | **Trackable scope** with acceptance criteria and optional `depends_on`. Follow `doccraft-story` if installed. |
-| **Backlog / queue** | `docs/backlog.md`, `docs/queue.md` | P-tier rows, status column, ordered "pick next" — not every chat. If the thread defined new **dependencies**, point the user at `doccraft-queue-audit` (Agent mode applies mechanical fixes). |
+| **ADR** | `{{DOCS_DIR}}/adr/NNN-slug.md` | A **decision** to freeze (chosen option, explicit deferral, or rejected approach you do not want re-litigated). See `doccraft-adr` if installed. |
+| **Research** | `{{DOCS_DIR}}/research/<topic>.md` | **Exploration / comparison / notes** (tools, papers, datasets) without a single "we decided X" — synthesis for humans and future agents. |
+| **Reference** | `{{DOCS_DIR}}/reference/<topic>.md` | Long-form **engineering** notes (runbooks, eval harnesses, pricing) that are not framed as an ADR. If the project has a `{{DOCS_DIR}}/reference/README.md`, add a link there when adding a new file. |
+| **Business** | `{{DOCS_DIR}}/business/<topic>.md` | **Business strategy** — target audience, business model, competitive landscape, marketing, unit economics, legal, launch sequence. Only propose if the project already tracks business docs under `{{DOCS_DIR}}/business/`; prefer updating existing topics over creating new ones. |
+| **Story** | `{{DOCS_DIR}}/stories/<slug>.md` | **Trackable scope** with acceptance criteria and optional `depends_on`. Follow `doccraft-story` if installed. |
+| **Backlog / queue** | `{{DOCS_DIR}}/backlog.md`, `{{DOCS_DIR}}/queue.md` | P-tier rows, status column, ordered "pick next" — not every chat. If the thread defined new **dependencies**, point the user at `doccraft-queue-audit` (Agent mode applies mechanical fixes). |
 
 ## Gate checklist (run mentally before proposing)
 
@@ -74,10 +72,10 @@ already opened). If the answer is "no" for all actionable rows → **§ Exit bel
 3. **Reference** — Is there **operational or eval** depth better as a living
    doc than an ADR or a story?
 4. **Business** — If the project tracks business strategy under
-   `docs/business/`: did the thread produce **business insights** (audience,
+   `{{DOCS_DIR}}/business/`: did the thread produce **business insights** (audience,
    pricing, competitive, marketing, legal, economics) that should update or
    extend those docs? Prefer updating existing docs over creating new ones.
-   Skip this row entirely if the project has no `docs/business/` tree.
+   Skip this row entirely if the project has no `{{DOCS_DIR}}/business/` tree.
 5. **Story** — Is there a **bounded deliverable** with testable acceptance
    criteria not already covered by an existing story?
 6. **Backlog / queue** — Did priorities or **P-tier status** change in a way
@@ -93,7 +91,7 @@ If **none** of the above apply → go to **§ Exit**.
 
    | Artifact | Proposed path | Why (one line) | Follow |
    |----------|---------------|----------------|--------|
-   | ADR / Research / Reference / Story / Backlog / Queue | e.g. `docs/adr/004-foo.md` | … | link to relevant skill or docs overview |
+   | ADR / Research / Reference / Story / Backlog / Queue | e.g. `{{DOCS_DIR}}/adr/004-foo.md` | … | link to relevant skill or docs overview |
 
 3. **Do not write files** unless the user explicitly asks to create or update
    them in the same turn. Offer drafts only when useful.
@@ -102,7 +100,7 @@ If **none** of the above apply → go to **§ Exit**.
    `doccraft-adr`.
 
 5. If proposing a story, remind: use `doccraft-story`; consider updating
-   `docs/backlog.md` (status column) and `docs/queue.md` (pick-next order)
+   `{{DOCS_DIR}}/backlog.md` (status column) and `{{DOCS_DIR}}/queue.md` (pick-next order)
    when priorities shift, and invoke `doccraft-queue-audit` in the same
    turn if new `depends_on` edges were introduced.
 
@@ -110,4 +108,4 @@ If **none** of the above apply → go to **§ Exit**.
 
 If no row in the proposals table applies, respond with **one or two sentences**
 only, e.g. *"No durable decisions or synthesis in this thread; nothing to add
-to docs/."* — then **stop** (no filler table, no speculative ADRs).
+to `{{DOCS_DIR}}/`."* — then **stop** (no filler table, no speculative ADRs).

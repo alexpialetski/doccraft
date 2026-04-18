@@ -1,6 +1,6 @@
 # ADR 004: docs/config.yaml schema — shape, location, lifecycle
 
-**Status:** Accepted
+**Status:** Superseded by [ADR 008](008-doccraft-yaml-at-root-with-docsdir.md)
 
 ## Context
 

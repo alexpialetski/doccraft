@@ -1,20 +1,20 @@
 ---
-description: Working queue in docs/queue.md — keep aligned with backlog and stories
-globs: docs/queue.md
+description: Working queue in {{DOCS_DIR}}/queue.md — keep aligned with backlog and stories
+globs: {{DOCS_DIR}}/queue.md
 alwaysApply: false
 ---
 
 # Working queue
 
-When editing `docs/queue.md`:
+When editing `{{DOCS_DIR}}/queue.md`:
 
 - The editorial process (ordering rules, dependency precedence, parallel
   waves) lives in the `doccraft-queue-audit` skill. Follow that skill rather
   than reinventing.
 - Keep the **Suggested order** table in sync with story `urgency` / `impact`
-  when you reprioritise. `docs/backlog.md` owns the full P-tier tables and
+  when you reprioritise. `{{DOCS_DIR}}/backlog.md` owns the full P-tier tables and
   Status column.
-- Rows must link to existing files under `docs/stories/`; add a story file
+- Rows must link to existing files under `{{DOCS_DIR}}/stories/`; add a story file
   (and a row in the backlog's *Story files* table) when introducing a new
   queued item.
 - After any `depends_on` edit or meaningful queue reorder, invoke

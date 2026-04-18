@@ -12,8 +12,10 @@ import {
   installRules,
   installSkills,
   parseToolsArg,
+  readDocsDirFromConfig,
   resolveToolSelection,
   scaffoldDocsIfMissing,
+  scaffoldRootConfigIfMissing,
   SUPPORTED_TOOLS,
   type SkillTool,
 } from '../utils/skills.js';
@@ -69,9 +71,9 @@ function printCursorVersionNoteIfNeeded(toolsArg: string): void {
 /**
  * Shared install helper used by both `init` and `update`. Four phases:
  *
- *   1. **Scaffold docs** — seed `docs/README.md`, `docs/backlog.md`,
- *      `docs/queue.md`, `docs/config.yaml`, and the `stories/` + `adr/`
- *      README indexes, but only for files that don't already exist.
+ *   1. **Scaffold config + docs** — write `doccraft.yaml` at project root
+ *      and seed `docs/README.md`, `docs/backlog.md`, `docs/queue.md`, and
+ *      the `stories/` + `adr/` README indexes, skipping existing files.
  *   2. **Install skills** — every `SKILL.md` lands at `.claude/skills/`
  *      regardless of tool selection (ADR 007). Claude Code reads it
  *      natively; Cursor 2.4+ auto-discovers it. `.cursor/skills/` is
@@ -86,11 +88,14 @@ export async function installDoccraftSkills(
   projectPath: string,
   toolsArg: string | undefined
 ): Promise<void> {
+  const rootConfigCreated = await scaffoldRootConfigIfMissing(projectPath);
   const scaffolded = await scaffoldDocsIfMissing(projectPath);
-  if (scaffolded.length > 0) {
-    console.log(chalk.dim(`\nScaffolded ${scaffolded.length} docs file(s): ${scaffolded.join(', ')}`));
+  const allCreated = rootConfigCreated ? ['doccraft.yaml', ...scaffolded] : scaffolded;
+  if (allCreated.length > 0) {
+    console.log(chalk.dim(`\nScaffolded ${allCreated.length} file(s): ${allCreated.join(', ')}`));
   }
 
+  const docsDir = await readDocsDirFromConfig(projectPath);
   const skills = await getAvailableSkills();
   const rules = await getAvailableRules();
   if (skills.length === 0 && rules.length === 0) {
@@ -118,8 +123,8 @@ export async function installDoccraftSkills(
   ).start();
 
   try {
-    await installSkills(projectPath, [canonicalSkillsTool], skills);
-    const installedRules = await installRules(projectPath, tools, rules);
+    await installSkills(projectPath, [canonicalSkillsTool], skills, docsDir);
+    const installedRules = await installRules(projectPath, tools, rules, docsDir);
 
     const skillsSummary = `${skills.length} skill(s) into ${canonicalSkillsTool.skillsDir}`;
     if (installedRules.length > 0) {
