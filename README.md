@@ -1,5 +1,10 @@
 # doccraft
 
+[![npm version](https://img.shields.io/npm/v/doccraft.svg)](https://www.npmjs.com/package/doccraft)
+[![npm downloads](https://img.shields.io/npm/dm/doccraft.svg)](https://www.npmjs.com/package/doccraft)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+[![Node.js](https://img.shields.io/node/v/doccraft.svg)](https://nodejs.org)
+
 Documentation and project-story skills for [Claude Code](https://claude.com/claude-code) and [Cursor](https://cursor.com), layered on [OpenSpec](https://github.com/Fission-AI/OpenSpec).
 
 `doccraft` is a thin CLI that:
@@ -33,7 +38,7 @@ npm i -g doccraft
 doccraft init
 ```
 
-Requires Node.js `>= 20.19.0`.
+Requires Node.js `>= 22.14.0`.
 
 ## Commands
 
@@ -73,9 +78,9 @@ pnpm run dev:cli -- init . --skip-openspec --tools claude,cursor
 ```
 
 This scaffolds `docs/` (committed — real project content), installs the four
-skills into `.claude/skills/` and `.cursor/skills/` (gitignored — derivable
-from `templates/`), and ships Cursor rule stubs to `.cursor/rules/`. Rerun
-the same command after touching `templates/` to refresh the local install.
+skills into `.claude/skills/` (gitignored — derivable from `templates/`),
+and ships Cursor rule stubs to `.cursor/rules/`. Rerun the same command
+after touching `templates/` to refresh the local install.
 
 Planning artifacts live in [`docs/`](docs/): ADRs capture the design
 decisions behind the install pipeline, the deferred config layer, and the
