@@ -20,7 +20,7 @@ rules and the Story-files coverage invariant.
 | ID | Item | Status |
 |----|------|--------|
 | P1.1 | Spike: does Cursor discover `.claude/skills/` out of the box? If yes, ship `--consolidate` flag | done |
-| P1.2 | Ship `--consolidate` install flag for dual-tool projects (per ADR 005) | planned |
+| P1.2 | Ship `--consolidate` install flag for dual-tool projects (per ADR 005) | done |
 | P1.3 | doccraft owns tool selection in init (3-option picker, forwards `--tools` to openspec) | done |
 
 ### P2 — backlog (known valuable, not scheduled)
