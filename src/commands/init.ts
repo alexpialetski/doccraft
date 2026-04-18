@@ -4,11 +4,13 @@ import ora from 'ora';
 import { runOpenspec } from '../utils/openspec.js';
 import {
   detectInstalledTools,
+  formatToolsArg,
   getAvailableRules,
   getAvailableSkills,
   installRules,
   installSkills,
   parseToolsArg,
+  resolveToolSelection,
   scaffoldDocsIfMissing,
   SUPPORTED_TOOLS,
   type SkillTool,
@@ -27,9 +29,14 @@ export async function runInit(targetPath: string, options: InitOptions): Promise
   console.log(chalk.bold('\ndoccraft init'));
   console.log(chalk.dim(`Target: ${resolvedPath}\n`));
 
+  // Resolve the tool selection up front so openspec and doccraft agree on it
+  // and the user never sees openspec's 28-tool picker as the first interactive
+  // moment of a doccraft install.
+  const toolsArg = await resolveToolSelection(options.tools);
+  console.log(chalk.dim(`Tools: ${formatToolsArg(toolsArg)}\n`));
+
   if (!options.skipOpenspec) {
-    const openspecArgs = ['init', resolvedPath];
-    if (options.tools) openspecArgs.push('--tools', options.tools);
+    const openspecArgs = ['init', resolvedPath, '--tools', toolsArg];
     if (options.force) openspecArgs.push('--force');
     if (options.profile) openspecArgs.push('--profile', options.profile);
 
@@ -41,7 +48,7 @@ export async function runInit(targetPath: string, options: InitOptions): Promise
     console.log(chalk.dim('Skipping openspec init (--skip-openspec)'));
   }
 
-  await installDoccraftSkills(resolvedPath, options.tools);
+  await installDoccraftSkills(resolvedPath, toolsArg);
 
   console.log(chalk.green('\nDone.'));
 }
@@ -50,18 +57,20 @@ export async function runInit(targetPath: string, options: InitOptions): Promise
  * Shared install helper used by both `init` and `update`. Three phases:
  *
  *   1. **Scaffold docs** — seed `docs/README.md`, `docs/backlog.md`,
- *      `docs/queue.md`, and the `stories/` + `adr/` README indexes, but
- *      only for files that don't already exist. `doccraft update` must
- *      never overwrite a user's backlog rows or project description.
+ *      `docs/queue.md`, `docs/config.yaml`, and the `stories/` + `adr/`
+ *      README indexes, but only for files that don't already exist.
+ *      `doccraft update` must never overwrite user content here.
  *   2. **Install skills** — byte-identical SKILL.md into every selected
  *      tool's `skills/` directory, with a MANAGED_HEADER injected so
  *      users know the file is regenerated on update.
  *   3. **Install rules** — Cursor-style `.mdc` stubs into `.cursor/rules/`
  *      only. Claude Code has no rules primitive.
  *
- * Tool selection follows the same rules as openspec init:
- *   - If `--tools` was passed, honor it (`all`, `none`, or explicit list).
- *   - Otherwise, detect which tool directories already exist in the project.
+ * Tool selection precedence:
+ *   - `toolsArg` passed explicitly (from `init`'s resolveToolSelection or
+ *     from `update`'s forwarded `--tools` flag).
+ *   - Otherwise, detect which tool directories already exist in the
+ *     project (useful for `update` on an existing install).
  *   - If nothing is detected, install to every supported tool.
  */
 export async function installDoccraftSkills(
