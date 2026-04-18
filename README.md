@@ -14,7 +14,7 @@ Skills bundled so far:
 - **`doccraft-session-wrap`** — after a design/research/prioritisation thread, propose doc artifacts (ADR / research / reference / business / story / backlog edits) only when the conversation produced durable insight worth capturing.
 - **`doccraft-queue-audit`** — reconcile the story dependency graph, pick-next queue, and backlog status. In Agent mode, applies objective fixes in the same turn (with scale and working-tree containment); in Ask mode, proposes only.
 
-Each skill lands identically in `.claude/skills/<name>/SKILL.md` and `.cursor/skills/<name>/SKILL.md`; both tools consume the same format.
+Every skill lands at `.claude/skills/<name>/SKILL.md` — the canonical Agent Skills location. Claude Code reads it natively; **Cursor 2.4+** auto-discovers it. doccraft never writes `.cursor/skills/` (Cursor has no cross-directory dedupe and would load every skill twice).
 
 Cursor users additionally get three glob-scoped rule stubs under `.cursor/rules/` (`planning-stories.mdc`, `planning-adrs.mdc`, `planning-queue.mdc`) that auto-attach when editing the matching docs and point at the installed skills. Claude Code has no equivalent rules primitive — its skills trigger on description match, so no rule stubs are installed there.
 
@@ -50,7 +50,6 @@ Flags forwarded to `openspec init`:
 doccraft-specific flags:
 
 - `--skip-openspec` — install doccraft skills only, skip `openspec init`.
-- `--consolidate` — **dual-tool only.** Write skills to `.claude/skills/` only; Cursor 2.4+ auto-discovers that directory without dedupe, so the default dual-write otherwise causes Cursor to load every skill twice. See [ADR 005](docs/adr/005-consolidate-skills-for-dual-tool.md). `.cursor/rules/*.mdc` stubs are unaffected. Throws if `--tools` isn't `claude,cursor`.
 
 ### `doccraft update [path]` (alias: `upgrade`)
 
@@ -61,7 +60,6 @@ Flags:
 - `--force` — force update even when already up to date.
 - `--tools <tools>` — which tools to refresh doccraft skills into (e.g. `claude`, `cursor`, `all`, `none`). Defaults to tools detected in the project.
 - `--skip-openspec` — refresh doccraft skills only.
-- `--consolidate` — **dual-tool only.** Same semantics as the init flag; requires explicit `--tools claude,cursor` on update (detection alone isn't a strong enough signal for an opinionated layout change). See [ADR 005](docs/adr/005-consolidate-skills-for-dual-tool.md).
 
 If `--tools` is omitted, doccraft detects installed tools by scanning for `.claude/` or `.cursor/`. When neither is present, doccraft falls back to installing into every supported tool.
 

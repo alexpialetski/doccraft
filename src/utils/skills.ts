@@ -163,38 +163,6 @@ export async function resolveToolSelection(raw: string | undefined): Promise<str
 }
 
 /**
- * Rejects `--consolidate` combinations where the flag is meaningless.
- *
- * Consolidation writes skills only to `.claude/skills/` and relies on
- * Cursor 2.4+ auto-discovering that directory (ADR 005). The flag only
- * makes sense when both Claude Code and Cursor are selected — it has
- * nothing to consolidate otherwise:
- *
- *   - `--tools claude --consolidate` — there is no Cursor install to
- *     skip; the flag is a noop.
- *   - `--tools cursor --consolidate` — there is no `.claude/` directory
- *     to consolidate into; asking for one is wrong.
- *   - `--tools none --consolidate` — zero tools to reason about.
- *
- * Early validation in `runInit` / `runUpdate` fails fast with a clear
- * message instead of letting the user discover the silent noop.
- */
-export function validateConsolidate(toolsArg: string): void {
-  const tools = parseToolsArg(toolsArg);
-  const hasClaude = tools.some((t) => t.id === 'claude');
-  const hasCursor = tools.some((t) => t.id === 'cursor');
-  if (!hasClaude || !hasCursor) {
-    throw new Error(
-      `--consolidate requires both Claude Code and Cursor to be selected ` +
-        `(currently: ${formatToolsArg(toolsArg)}). ` +
-        `Cursor-only installs have no .claude/ directory to consolidate into; ` +
-        `Claude-only installs have no .cursor/skills/ to skip. ` +
-        `Remove --consolidate or run with --tools claude,cursor.`
-    );
-  }
-}
-
-/**
  * Renders a canonical --tools string as human-readable tool names for the
  * one-line echo in `doccraft init` / `update`.
  */
@@ -270,22 +238,24 @@ export interface InstalledSkill {
 }
 
 /**
- * Returns the subset of `tools` that should receive SKILL.md writes under the
- * given consolidation mode.
+ * The single canonical install target for SKILL.md writes.
  *
- * - `consolidate: false` (default) → every selected tool gets its own
- *   `.<tool>/skills/<name>/SKILL.md`. Matches ADR 001's dual-install contract.
- * - `consolidate: true` → skills are written only to Claude Code; Cursor and
- *   any future `.claude/skills/`-discovering tool rely on that directory.
- *   Rules (`.cursor/rules/*.mdc`) are NOT affected by this filter — rule
- *   install continues to target every selected tool with a `rulesDir`.
+ * ADR 007: `.claude/skills/` is the de facto canonical Agent Skills location
+ * — Claude Code reads it natively, Cursor 2.4+ auto-discovers it, and every
+ * major discovery implementation points there. doccraft always writes skills
+ * here regardless of which tools the user selected; `.cursor/skills/` is
+ * never written by doccraft (Cursor would load every skill twice without
+ * dedupe, wasting context window).
+ *
+ * `.cursor/rules/*.mdc` stubs are a separate Cursor-native primitive (ADR
+ * 003) and are still written when Cursor is in the user's selection.
  */
-export function filterSkillTargets(
-  tools: readonly SkillTool[],
-  consolidate: boolean
-): SkillTool[] {
-  if (!consolidate) return [...tools];
-  return tools.filter((t) => t.id === 'claude');
+export function getCanonicalSkillsTool(): SkillTool {
+  const claude = SUPPORTED_TOOLS.find((t) => t.id === 'claude');
+  if (!claude) {
+    throw new Error('doccraft internal error: claude tool missing from SUPPORTED_TOOLS');
+  }
+  return claude;
 }
 
 /**
