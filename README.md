@@ -7,23 +7,16 @@
 
 Documentation and project-story skills for [Claude Code](https://claude.com/claude-code) and [Cursor](https://cursor.com), layered on [OpenSpec](https://github.com/Fission-AI/OpenSpec).
 
-`doccraft` is a thin CLI that:
+## Skills
 
-1. Wraps `openspec init` / `openspec update` so you don't have to run them separately.
-2. Installs a curated set of skills and rules for Claude Code and Cursor that manage docs-folder workflow and project story.
+- **`doccraft-story`** — product stories under `docs/stories/` with typed YAML frontmatter.
+- **`doccraft-adr`** — architecture decision records under `docs/adr/`, Nygard-style.
+- **`doccraft-session-wrap`** — propose doc artifacts after a design/research thread, only when durable insight was produced.
+- **`doccraft-queue-audit`** — reconcile the story dependency graph, pick-next queue, and backlog.
+- **`doccraft-config`** — tailor `doccraft.json` to your project. Analyse mode proposes values; edit mode validates targeted changes against the embedded JSON Schema.
+- **`doccraft-update`** — upgrade doccraft and the bundled OpenSpec. Silent when no migration applies; summarises and gates when one does.
 
-Skills bundled so far:
-
-- **`doccraft-story`** — author/update product stories under `docs/stories/` with a typed YAML frontmatter (id, status, impact, urgency, tags, openspec, depends_on).
-- **`doccraft-adr`** — author/update architecture decision records under `docs/adr/` with Nygard-style Context / Decision / Consequences and explicit status + supersession.
-- **`doccraft-session-wrap`** — after a design/research/prioritisation thread, propose doc artifacts (ADR / research / reference / business / story / backlog edits) only when the conversation produced durable insight worth capturing.
-- **`doccraft-queue-audit`** — reconcile the story dependency graph, pick-next queue, and backlog status. In Agent mode, applies objective fixes in the same turn (with scale and working-tree containment); in Ask mode, proposes only.
-
-Every skill lands at `.claude/skills/<name>/SKILL.md` — the canonical Agent Skills location. Claude Code reads it natively; **Cursor 2.4+** auto-discovers it. doccraft never writes `.cursor/skills/` (Cursor has no cross-directory dedupe and would load every skill twice).
-
-Cursor users additionally get three glob-scoped rule stubs under `.cursor/rules/` (`planning-stories.mdc`, `planning-adrs.mdc`, `planning-queue.mdc`) that auto-attach when editing the matching docs and point at the installed skills. Claude Code has no equivalent rules primitive — its skills trigger on description match, so no rule stubs are installed there.
-
-`doccraft init` also scaffolds starter `docs/README.md`, `docs/backlog.md`, `docs/queue.md`, `docs/stories/README.md`, and `docs/adr/README.md`. These are seeded once on first install — `doccraft update` never overwrites them, so your actual backlog rows and project description stay intact across updates.
+Skills install to `.claude/skills/` (read natively by Claude Code; auto-discovered by Cursor 2.4+). Cursor also gets rule stubs under `.cursor/rules/` that auto-attach when editing docs.
 
 ## Install
 
@@ -31,91 +24,42 @@ Cursor users additionally get three glob-scoped rule stubs under `.cursor/rules/
 npx doccraft init
 ```
 
-Or install globally:
-
-```bash
-npm i -g doccraft
-doccraft init
-```
+Then invoke the **`doccraft-config`** skill in Claude Code or Cursor to tailor `doccraft.json` to your project.
 
 Requires Node.js `>= 22.14.0`.
 
+## Updating
+
+Invoke the **`doccraft-update`** skill. It reads the `version` stamp in `doccraft.json`, runs the upgrade silently when possible, or summarises and gates when a release declares a migration. OpenSpec is upgraded transitively. No local install required — skills use `npx doccraft@latest` under the hood.
+
+## `doccraft.json`
+
+```json
+{
+  "$schema": "https://cdn.jsdelivr.net/npm/doccraft@0.9.0/schema/doccraft.schema.json",
+  "version": "0.9.0",
+  "_hint": "Edit with the doccraft-config skill.",
+  "docsDir": "docs",
+  "story": { "areas": ["..."], "themes": ["..."] }
+}
+```
+
+- `$schema` is pinned to the same version as the `version` stamp and served by jsDelivr — IDEs (VS Code, JetBrains) validate and show field descriptions out of the box.
+- `version` and the URL's version segment are managed by doccraft (`init` writes them, `update` bumps them together; nothing else in the file is touched).
+- Every other key is user-owned. Deleting the file falls back to in-skill defaults.
+
 ## Commands
 
-### `doccraft init [path]`
+- **`doccraft init [path]`** — scaffolds `doccraft.json`, installs skills, runs `openspec init`.
+- **`doccraft update [path]`** (alias: `upgrade`) — refreshes skills, runs `openspec update`, bumps the `version` stamp.
+- **`doccraft llm`** — emits the JSON manifest consumed by the `doccraft-update` skill. No flags, no arguments.
 
-Initializes doccraft in a project. Runs `openspec init` under the hood, then installs doccraft's skill templates into each selected tool's `skills/` directory.
+Common flags on `init` / `update`: `--tools <claude|cursor|all|none>`, `--force`, `--skip-openspec`. See `doccraft <cmd> --help` for full options.
 
-Flags forwarded to `openspec init`:
+## Contributing
 
-- `--tools <tools>` — which AI tools to configure (e.g. `claude`, `cursor`, `all`).
-- `--force` — auto-cleanup legacy files without prompting.
-- `--profile <profile>` — override global config profile.
-
-doccraft-specific flags:
-
-- `--skip-openspec` — install doccraft skills only, skip `openspec init`.
-
-### `doccraft update [path]` (alias: `upgrade`)
-
-Refreshes doccraft skill templates and runs `openspec update` to pull new OpenSpec instruction files.
-
-Flags:
-
-- `--force` — force update even when already up to date.
-- `--tools <tools>` — which tools to refresh doccraft skills into (e.g. `claude`, `cursor`, `all`, `none`). Defaults to tools detected in the project.
-- `--skip-openspec` — refresh doccraft skills only.
-
-If `--tools` is omitted, doccraft detects installed tools by scanning for `.claude/` or `.cursor/`. When neither is present, doccraft falls back to installing into every supported tool.
-
-## Dogfooding
-
-doccraft uses its own skills on itself. After cloning, install them locally:
-
-```bash
-pnpm install
-pnpm run dev:cli -- init . --skip-openspec --tools claude,cursor
-```
-
-This scaffolds `docs/` (committed — real project content), installs the four
-skills into `.claude/skills/` (gitignored — derivable from `templates/`),
-and ships Cursor rule stubs to `.cursor/rules/`. Rerun the same command
-after touching `templates/` to refresh the local install.
-
-Planning artifacts live in [`docs/`](docs/): ADRs capture the design
-decisions behind the install pipeline, the deferred config layer, and the
-Cursor-only rule-stub approach. Stories in [`docs/stories/`](docs/stories/)
-track the outstanding follow-ups, with priorities in
-[`docs/queue.md`](docs/queue.md) and the full backlog in
-[`docs/backlog.md`](docs/backlog.md).
-
-## Development
-
-```bash
-pnpm install
-pnpm run build
-pnpm run test
-```
-
-Run the CLI locally:
-
-```bash
-pnpm run dev:cli -- init ./some/project
-```
-
-### Releasing
-
-Releases are automated via [semantic-release](https://github.com/semantic-release/semantic-release):
-
-1. Use conventional-commit messages (`feat:`, `fix:`, `feat!:` for breaking).
-2. Merge to `main`. The release workflow publishes to npm and creates a GitHub release automatically based on the commit history.
-
-Conventional commit format is enforced on PRs by commitlint.
-
-## Changelog
-
-See [CHANGELOG.md](./CHANGELOG.md) for a full release history.
+See [CLAUDE.md](./CLAUDE.md) for the dev loop and conventions. Releases are automated via semantic-release on conventional-commit messages.
 
 ## License
 
-[MIT](./LICENSE)
+[MIT](./LICENSE) — changelog at [CHANGELOG.md](./CHANGELOG.md).

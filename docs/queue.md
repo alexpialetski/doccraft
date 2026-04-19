@@ -18,12 +18,11 @@ Stories use YAML frontmatter per the `doccraft-story` skill: `impact` (H/M/L),
 
 | # | Item | Story |
 |---|------|-------|
-|   |      |       |
+| 1 | P1.5 — assisted setup and migration (JSON config, `doccraft llm`, `doccraft-config` / `doccraft-update` skills) | [p1-assisted-setup-and-migration.md](stories/p1-assisted-setup-and-migration.md) |
 
-All planned P0/P1 items have shipped. Next decisions: promote a P2 item
-when one becomes urgent, or file new stories based on usage feedback.
-The P2.1 (parallel-waves split watch) and P2.2 (docs-maintenance skill
-family) items remain in the backlog for later consideration.
+P1.5 is the next pick. P2.1 (parallel-waves split watch) and P2.2
+(docs-maintenance skill family) remain in the backlog for later
+consideration.
 
 **Recently shipped:**
 

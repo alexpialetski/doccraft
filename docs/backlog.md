@@ -23,6 +23,7 @@ rules and the Story-files coverage invariant.
 | P1.2 | Ship `--consolidate` install flag for dual-tool projects (per ADR 005) | done (superseded by P1.4) |
 | P1.3 | doccraft owns tool selection in init (3-option picker, forwards `--tools` to openspec) | done |
 | P1.4 | Default skill install to `.claude/skills/`; remove `--consolidate` (per ADR 007) | done |
+| P1.5 | Assisted setup and migration — JSON config, `doccraft llm`, `doccraft-config` / `doccraft-update` skills (per ADR 009) | todo |
 
 ### P2 — backlog (known valuable, not scheduled)
 
@@ -55,6 +56,7 @@ Detailed acceptance criteria for the items above. Queue rows in
 | P1.2 | [Ship --consolidate install flag](stories/p1-consolidate-install-flag.md) |
 | P1.3 | [doccraft owns tool selection in init](stories/p1-init-tool-picker.md) |
 | P1.4 | [Default skill install to .claude/skills/; remove --consolidate](stories/p1-default-to-claude-skills.md) |
+| P1.5 | [Assisted setup and migration — JSON config, doccraft llm, config/update skills](stories/p1-assisted-setup-and-migration.md) |
 | P2.1 | [Parallel-waves split watch](stories/p2-parallel-waves-split-watch.md) |
 | P2.2 | [Docs-maintenance skill family](stories/p2-docs-maintenance-skills.md) |
 
