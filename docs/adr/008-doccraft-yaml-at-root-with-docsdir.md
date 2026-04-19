@@ -1,6 +1,11 @@
 # ADR 008: Move config to `doccraft.yaml` at project root with single `docsDir` key
 
-**Status:** Accepted — supersedes [ADR 004](004-docs-config-schema.md)
+**Status:** Superseded by [ADR 009](009-llm-command-and-assisted-setup.md) — supersedes [ADR 004](004-docs-config-schema.md).
+
+ADR 009 moves the config file to `doccraft.json` (JSON with `$schema`) and
+adds a top-level `version` stamp. The location-at-root decision and the
+`docsDir` key both survive; only the filename and format change. The
+rationale below remains accurate as a record of the YAML-era design.
 
 ## Context
 

@@ -123,3 +123,9 @@ pnpm run dev:cli      # Build + run the local CLI
 - **`doccraft.yaml` is user-owned.** Doccraft scaffolds it once at the
   project root and never overwrites. Skill bodies read from it at
   invocation time with in-skill defaults as fallback (ADR 004).
+- **Use `skill-creator` when authoring or modifying skills.** Any new
+  or edited `SKILL.md` under `templates/skills/` goes through the
+  Claude `skill-creator` skill — it enforces the frontmatter shape,
+  description quality, and structural conventions the ecosystem
+  expects. Applies to both fresh skills and material edits to existing
+  ones.
