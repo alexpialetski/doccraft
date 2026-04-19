@@ -65,8 +65,12 @@ are user-owned artifacts and neither init nor update regenerates them.
 
 ## Gitignore
 
-- `.claude/`, `.cursor/` — tool dotdirs. Skill and rule installs are
-  derivable from `templates/` and are not committed.
+- `.claude/`, `.cursor/` — **tracked** in this repo. The doccraft skills
+  are derivable from `templates/`, but OpenSpec installs its own skills
+  and slash commands under these dirs from an external package, so
+  committing the whole tree keeps the agent environment reproducible
+  without re-running install. `.claude/settings.local.json` stays
+  gitignored (per-user overrides).
 - `docs/` is tracked — it **is** the project's planning.
 
 ## Directory map
