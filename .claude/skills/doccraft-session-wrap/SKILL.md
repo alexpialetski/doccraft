@@ -13,7 +13,7 @@ description: >-
   drafts only.
 ---
 
-> Managed by **doccraft** — `doccraft update` regenerates this file. Local edits will be overwritten. See `doccraft.yaml` to override project-specific vocabulary and paths without touching this file.
+> Managed by **doccraft** — `doccraft update` regenerates this file. Local edits will be overwritten. See `doccraft.json` to override project-specific vocabulary and paths without touching this file.
 
 # doccraft — session wrap (propose docs artifacts)
 

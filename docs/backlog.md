@@ -23,7 +23,7 @@ rules and the Story-files coverage invariant.
 | P1.2 | Ship `--consolidate` install flag for dual-tool projects (per ADR 005) | done (superseded by P1.4) |
 | P1.3 | doccraft owns tool selection in init (3-option picker, forwards `--tools` to openspec) | done |
 | P1.4 | Default skill install to `.claude/skills/`; remove `--consolidate` (per ADR 007) | done |
-| P1.5 | Assisted setup and migration — JSON config, `doccraft llm`, `doccraft-config` / `doccraft-update` skills (per ADR 009) | todo |
+| P1.5 | Assisted setup and migration — JSON config, `doccraft llm`, `doccraft-config` / `doccraft-update` skills (per ADR 009) | done |
 
 ### P2 — backlog (known valuable, not scheduled)
 

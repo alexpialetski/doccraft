@@ -1,7 +1,12 @@
 import path from 'node:path';
+import { createRequire } from 'node:module';
 import chalk from 'chalk';
 import { runOpenspec } from '../utils/openspec.js';
 import { installDoccraftSkills } from './init.js';
+import { bumpConfigVersion } from '../utils/skills.js';
+
+const _require = createRequire(import.meta.url);
+const PACKAGE_VERSION: string = (_require('../../package.json') as { version: string }).version;
 
 export interface UpdateOptions {
   force?: boolean;
@@ -28,6 +33,7 @@ export async function runUpdate(targetPath: string, options: UpdateOptions): Pro
   }
 
   await installDoccraftSkills(resolvedPath, options.tools);
+  await bumpConfigVersion(resolvedPath, PACKAGE_VERSION);
 
   console.log(chalk.green('\nDone.'));
 }

@@ -3,6 +3,7 @@ import { createRequire } from 'node:module';
 import ora from 'ora';
 import { runInit } from '../commands/init.js';
 import { runUpdate } from '../commands/update.js';
+import { runLlm } from '../commands/llm.js';
 
 const program = new Command();
 const require = createRequire(import.meta.url);
@@ -43,6 +44,18 @@ program
     } catch (error) {
       console.log();
       ora().fail(`Error: ${(error as Error).message}`);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('llm')
+  .description('Emit a compact JSON manifest for LLM/skill consumption (version, schema, skills, migrations)')
+  .action(async () => {
+    try {
+      await runLlm();
+    } catch (error) {
+      console.error(`Error: ${(error as Error).message}`);
       process.exit(1);
     }
   });

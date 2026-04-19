@@ -90,7 +90,7 @@ export async function installDoccraftSkills(
 ): Promise<void> {
   const rootConfigCreated = await scaffoldRootConfigIfMissing(projectPath);
   const scaffolded = await scaffoldDocsIfMissing(projectPath);
-  const allCreated = rootConfigCreated ? ['doccraft.yaml', ...scaffolded] : scaffolded;
+  const allCreated = rootConfigCreated ? ['doccraft.json', ...scaffolded] : scaffolded;
   if (allCreated.length > 0) {
     console.log(chalk.dim(`\nScaffolded ${allCreated.length} file(s): ${allCreated.join(', ')}`));
   }

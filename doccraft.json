@@ -1,0 +1,47 @@
+{
+  "$schema": "https://cdn.jsdelivr.net/npm/doccraft@0.0.0-semantic-release/schema/doccraft.schema.json",
+  "version": "0.0.0-semantic-release",
+  "_hint": "Edit with the doccraft-config skill (npx doccraft@latest llm exposes the schema).",
+  "docsDir": "docs",
+  "story": {
+    "areas": [
+      "cli",
+      "skills",
+      "rules",
+      "config",
+      "openspec",
+      "scaffold"
+    ],
+    "slices": [],
+    "themes": [
+      "docs",
+      "testing",
+      "install",
+      "ux"
+    ],
+    "id": {
+      "tiers": ["p0", "p1", "p2", "p3", "p4"],
+      "pattern": "^(P\\d+(\\.\\d+)?|[a-z][a-z0-9-]+)$"
+    }
+  },
+  "queue": {
+    "tables": {
+      "suggestedOrder": "Suggested order",
+      "platformSpikes": "Platform spikes"
+    }
+  },
+  "queueAudit": {
+    "laneFrom": ["area", "slice"],
+    "scale": {
+      "maxStoryFiles": 5,
+      "maxQueueReorderPct": 50
+    }
+  },
+  "sessionWrap": {
+    "capture": {
+      "research": false,
+      "reference": false,
+      "business": false
+    }
+  }
+}

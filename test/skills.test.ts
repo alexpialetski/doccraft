@@ -11,6 +11,7 @@ import path from 'node:path';
 import { describe, expect, it, afterEach } from 'vitest';
 import {
   applyDocsDir,
+  bumpConfigVersion,
   findStaleCursorSkills,
   formatToolsArg,
   getAvailableRules,
@@ -29,6 +30,7 @@ import {
   SUPPORTED_TOOLS,
 } from '../src/utils/skills.js';
 import { installDoccraftSkills } from '../src/commands/init.js';
+import { DOCCRAFT_CONFIG_SCHEMA } from '../src/utils/config-schema.js';
 
 const tempDirs: string[] = [];
 
@@ -45,14 +47,31 @@ afterEach(() => {
   }
 });
 
+describe('config-schema', () => {
+  it('every property in the schema has a description', () => {
+    function checkDescriptions(obj: Record<string, unknown>, path: string): void {
+      if (obj.properties && typeof obj.properties === 'object') {
+        for (const [key, val] of Object.entries(obj.properties as Record<string, unknown>)) {
+          const prop = val as Record<string, unknown>;
+          expect(prop.description, `${path}.${key} is missing description`).toBeTruthy();
+          checkDescriptions(prop, `${path}.${key}`);
+        }
+      }
+    }
+    checkDescriptions(DOCCRAFT_CONFIG_SCHEMA as unknown as Record<string, unknown>, 'root');
+  });
+});
+
 describe('getAvailableSkills', () => {
-  it('returns all four bundled skill templates', async () => {
+  it('returns all six bundled skill templates', async () => {
     const skills = await getAvailableSkills();
     const names = skills.map((s) => s.name);
     expect(names).toContain('doccraft-story');
     expect(names).toContain('doccraft-adr');
     expect(names).toContain('doccraft-session-wrap');
     expect(names).toContain('doccraft-queue-audit');
+    expect(names).toContain('doccraft-config');
+    expect(names).toContain('doccraft-update');
   });
 
   it('returns skills sorted by name for deterministic output', async () => {
@@ -95,19 +114,17 @@ describe('injectManagedHeader', () => {
   it('does not duplicate the header when applied twice', () => {
     const raw = '---\nname: foo\n---\n\n# Title\n';
     const once = injectManagedHeader(raw);
-    // Re-inserting should not add a second copy; we expect exactly one header occurrence.
-    // (If installSkills is called twice, the source template is always the raw file,
-    // so this test represents a theoretical concern — but catching it keeps us honest.)
     const headerCount = (once.match(/Managed by \*\*doccraft\*\*/g) ?? []).length;
     expect(headerCount).toBe(1);
+  });
+
+  it('references doccraft.json (not doccraft.yaml) in the managed header', () => {
+    expect(MANAGED_HEADER).toContain('doccraft.json');
+    expect(MANAGED_HEADER).not.toContain('doccraft.yaml');
   });
 });
 
 describe('resolveToolSelection', () => {
-  // In vitest, process.stdin is not a TTY, so the non-prompt branches fire.
-  // We do not test the prompt branch from within unit tests — it relies on
-  // an interactive TTY and is covered by manual E2E.
-
   it('returns a canonical comma-list when --tools is explicit', async () => {
     expect(await resolveToolSelection('claude')).toBe('claude');
     expect(await resolveToolSelection('cursor')).toBe('cursor');
@@ -235,6 +252,25 @@ describe('installDoccraftSkills (ADR 007 default layout)', () => {
     expect(existsSync(path.join(project, '.cursor/skills'))).toBe(false);
     expect(existsSync(path.join(project, '.cursor/rules/planning-stories.mdc'))).toBe(true);
   });
+
+  it('installs doccraft-config and doccraft-update alongside the original four skills', async () => {
+    const project = makeTempProject();
+    await installDoccraftSkills(project, 'claude');
+
+    for (const skill of [
+      'doccraft-story',
+      'doccraft-adr',
+      'doccraft-session-wrap',
+      'doccraft-queue-audit',
+      'doccraft-config',
+      'doccraft-update',
+    ]) {
+      expect(
+        existsSync(path.join(project, `.claude/skills/${skill}/SKILL.md`)),
+        `${skill} should be installed`
+      ).toBe(true);
+    }
+  });
 });
 
 describe('installSkills', () => {
@@ -247,6 +283,8 @@ describe('installSkills', () => {
       'doccraft-adr',
       'doccraft-session-wrap',
       'doccraft-queue-audit',
+      'doccraft-config',
+      'doccraft-update',
     ]) {
       const claudePath = path.join(project, `.claude/skills/${skill}/SKILL.md`);
       expect(existsSync(claudePath)).toBe(true);
@@ -266,7 +304,7 @@ describe('installSkills', () => {
       'utf8'
     );
     expect(content).toContain('Managed by **doccraft**');
-    expect(content).toContain('doccraft.yaml');
+    expect(content).toContain('doccraft.json');
     // Header must appear after frontmatter closes and before the body title.
     const fmEnd = content.indexOf('\n---\n', 4) + '\n---\n'.length;
     const headerIdx = content.indexOf('Managed by **doccraft**');
@@ -289,6 +327,19 @@ describe('installSkills', () => {
     const headerCount = (fresh.match(/Managed by \*\*doccraft\*\*/g) ?? []).length;
     expect(headerCount).toBe(1);
   });
+
+  it('substitutes {{DOCCRAFT_CONFIG_SCHEMA}} in doccraft-config and no placeholder remains', async () => {
+    const project = makeTempProject();
+    await installSkills(project, [SUPPORTED_TOOLS[0]]);
+
+    const content = readFileSync(
+      path.join(project, '.claude/skills/doccraft-config/SKILL.md'),
+      'utf8'
+    );
+    expect(content).not.toContain('{{DOCCRAFT_CONFIG_SCHEMA}}');
+    // Installed skill contains JSON Schema content (has the $schema meta key)
+    expect(content).toContain('"$schema"');
+  });
 });
 
 describe('installRules', () => {
@@ -301,11 +352,8 @@ describe('installRules', () => {
     expect(existsSync(path.join(cursorRuleDir, 'planning-adrs.mdc'))).toBe(true);
     expect(existsSync(path.join(cursorRuleDir, 'planning-queue.mdc'))).toBe(true);
 
-    // No Claude-side rules directory should be created — Claude has no
-    // equivalent primitive.
     expect(existsSync(path.join(project, '.claude/rules'))).toBe(false);
 
-    // Every installed record should point at a Cursor path.
     for (const rec of installed) {
       expect(rec.tool).toBe('cursor');
     }
@@ -329,7 +377,7 @@ describe('installRules', () => {
     expect(existsSync(path.join(project, '.cursor/rules'))).toBe(false);
   });
 
-  it('substitutes default docsDir when no config.yaml exists', async () => {
+  it('substitutes default docsDir when no doccraft.json exists', async () => {
     const project = makeTempProject();
     await installRules(project, SUPPORTED_TOOLS);
     const adrs = readFileSync(path.join(project, '.cursor/rules/planning-adrs.mdc'), 'utf8');
@@ -337,12 +385,19 @@ describe('installRules', () => {
     expect(adrs).not.toContain('{{DOCS_DIR}}');
   });
 
-  it('substitutes custom docsDir from doccraft.yaml into rule globs', async () => {
+  it('substitutes custom docsDir from doccraft.json into rule globs', async () => {
     const project = makeTempProject();
-    writeFileSync(path.join(project, 'doccraft.yaml'), 'docsDir: design\n', 'utf8');
+    writeFileSync(
+      path.join(project, 'doccraft.json'),
+      JSON.stringify({ docsDir: 'design' }),
+      'utf8'
+    );
     await installRules(project, SUPPORTED_TOOLS);
     const adrs = readFileSync(path.join(project, '.cursor/rules/planning-adrs.mdc'), 'utf8');
-    const stories = readFileSync(path.join(project, '.cursor/rules/planning-stories.mdc'), 'utf8');
+    const stories = readFileSync(
+      path.join(project, '.cursor/rules/planning-stories.mdc'),
+      'utf8'
+    );
     const queue = readFileSync(path.join(project, '.cursor/rules/planning-queue.mdc'), 'utf8');
     expect(adrs).toContain('globs: design/adr/**/*.md');
     expect(stories).toContain('globs: design/stories/**/*.md');
@@ -352,21 +407,35 @@ describe('installRules', () => {
 });
 
 describe('readDocsDirFromConfig', () => {
-  it('returns "docs" when no doccraft.yaml exists', async () => {
+  it('returns "docs" when no doccraft.json exists', async () => {
     const project = makeTempProject();
     expect(await readDocsDirFromConfig(project)).toBe('docs');
   });
 
-  it('returns "docs" when doccraft.yaml has no docsDir key', async () => {
+  it('returns "docs" when doccraft.json has no docsDir key', async () => {
     const project = makeTempProject();
-    writeFileSync(path.join(project, 'doccraft.yaml'), 'story:\n  areas: []\n', 'utf8');
+    writeFileSync(
+      path.join(project, 'doccraft.json'),
+      JSON.stringify({ story: { areas: [] } }),
+      'utf8'
+    );
     expect(await readDocsDirFromConfig(project)).toBe('docs');
   });
 
   it('returns the configured docsDir', async () => {
     const project = makeTempProject();
-    writeFileSync(path.join(project, 'doccraft.yaml'), 'docsDir: planning\n', 'utf8');
+    writeFileSync(
+      path.join(project, 'doccraft.json'),
+      JSON.stringify({ docsDir: 'planning' }),
+      'utf8'
+    );
     expect(await readDocsDirFromConfig(project)).toBe('planning');
+  });
+
+  it('does not read doccraft.yaml even if only that file exists', async () => {
+    const project = makeTempProject();
+    writeFileSync(path.join(project, 'doccraft.yaml'), 'docsDir: planning\n', 'utf8');
+    expect(await readDocsDirFromConfig(project)).toBe('docs');
   });
 });
 
@@ -386,7 +455,6 @@ describe('scaffoldDocsIfMissing', () => {
     expect(created).toContain('docs/queue.md');
     expect(created).toContain('docs/stories/README.md');
     expect(created).toContain('docs/adr/README.md');
-    expect(created).not.toContain('docs/config.yaml');
     expect(existsSync(path.join(project, 'docs/backlog.md'))).toBe(true);
   });
 
@@ -415,19 +483,94 @@ describe('scaffoldDocsIfMissing', () => {
 });
 
 describe('scaffoldRootConfigIfMissing', () => {
-  it('creates doccraft.yaml at project root on first run', async () => {
+  it('creates doccraft.json at project root on first run', async () => {
     const project = makeTempProject();
     const created = await scaffoldRootConfigIfMissing(project);
     expect(created).toBe(true);
-    expect(existsSync(path.join(project, 'doccraft.yaml'))).toBe(true);
-    expect(readFileSync(path.join(project, 'doccraft.yaml'), 'utf8')).toContain('docsDir:');
+    expect(existsSync(path.join(project, 'doccraft.json'))).toBe(true);
+    const content = readFileSync(path.join(project, 'doccraft.json'), 'utf8');
+    expect(content).toContain('"docsDir"');
   });
 
-  it('does not overwrite an existing doccraft.yaml', async () => {
+  it('does not create doccraft.yaml (only doccraft.json)', async () => {
     const project = makeTempProject();
-    writeFileSync(path.join(project, 'doccraft.yaml'), 'docsDir: planning\n', 'utf8');
+    await scaffoldRootConfigIfMissing(project);
+    expect(existsSync(path.join(project, 'doccraft.yaml'))).toBe(false);
+  });
+
+  it('does not overwrite an existing doccraft.json', async () => {
+    const project = makeTempProject();
+    writeFileSync(path.join(project, 'doccraft.json'), '{"docsDir":"planning"}', 'utf8');
     const created = await scaffoldRootConfigIfMissing(project);
     expect(created).toBe(false);
-    expect(readFileSync(path.join(project, 'doccraft.yaml'), 'utf8')).toBe('docsDir: planning\n');
+    expect(readFileSync(path.join(project, 'doccraft.json'), 'utf8')).toBe(
+      '{"docsDir":"planning"}'
+    );
+  });
+
+  it('substitutes {{DOCCRAFT_VERSION}} so version and $schema URL are correct', async () => {
+    const project = makeTempProject();
+    await scaffoldRootConfigIfMissing(project);
+    const content = readFileSync(path.join(project, 'doccraft.json'), 'utf8');
+    expect(content).not.toContain('{{DOCCRAFT_VERSION}}');
+    const parsed = JSON.parse(content) as { version: string; $schema: string };
+    expect(parsed.version).toBeTruthy();
+    expect(parsed.$schema).toContain(parsed.version);
+  });
+});
+
+describe('bumpConfigVersion', () => {
+  it('updates version and $schema URL, preserving all other bytes', async () => {
+    const project = makeTempProject();
+    const original = JSON.stringify(
+      {
+        $schema:
+          'https://cdn.jsdelivr.net/npm/doccraft@0.1.0/schema/doccraft.schema.json',
+        version: '0.1.0',
+        _hint: 'some hint',
+        docsDir: 'docs',
+        story: { areas: ['cli'] },
+      },
+      null,
+      2
+    );
+    writeFileSync(path.join(project, 'doccraft.json'), original, 'utf8');
+
+    await bumpConfigVersion(project, '0.2.0');
+
+    const updated = readFileSync(path.join(project, 'doccraft.json'), 'utf8');
+    const parsed = JSON.parse(updated) as { version: string; $schema: string; docsDir: string };
+    expect(parsed.version).toBe('0.2.0');
+    expect(parsed.$schema).toContain('0.2.0');
+    expect(parsed.$schema).not.toContain('0.1.0');
+    // Other fields preserved
+    expect(parsed.docsDir).toBe('docs');
+  });
+
+  it('keeps version and $schema URL in sync after bump', async () => {
+    const project = makeTempProject();
+    writeFileSync(
+      path.join(project, 'doccraft.json'),
+      JSON.stringify({
+        $schema:
+          'https://cdn.jsdelivr.net/npm/doccraft@1.0.0/schema/doccraft.schema.json',
+        version: '1.0.0',
+      }),
+      'utf8'
+    );
+
+    await bumpConfigVersion(project, '1.1.0');
+
+    const content = readFileSync(path.join(project, 'doccraft.json'), 'utf8');
+    const parsed = JSON.parse(content) as { version: string; $schema: string };
+    expect(parsed.version).toBe('1.1.0');
+    expect(parsed.$schema).toContain('1.1.0');
+    expect(parsed.$schema).not.toContain('1.0.0');
+  });
+
+  it('returns false and does nothing when doccraft.json is missing', async () => {
+    const project = makeTempProject();
+    const result = await bumpConfigVersion(project, '1.0.0');
+    expect(result).toBe(false);
   });
 });
