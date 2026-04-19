@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import { DOCCRAFT_CONFIG_SCHEMA } from '../utils/config-schema.js';
-import { getAvailableSkills } from '../utils/skills.js';
+import { applyDocsDir, getAvailableSkills } from '../utils/skills.js';
 
 const _require = createRequire(import.meta.url);
 
@@ -68,7 +68,7 @@ async function buildSkillsList(): Promise<SkillEntry[]> {
       }
     }
 
-    entries.push({ name: skill.name, purpose });
+    entries.push({ name: skill.name, purpose: applyDocsDir(purpose, 'docs') });
   }
 
   return entries;
