@@ -33,9 +33,14 @@ coverage/
 # Editors / agents
 .vscode/
 .idea/
-.claude/
-.cursor/
 .opencode/
 .codex/
-# NB: CLAUDE.md at the repo root is tracked intentionally (dogfood
-# project-level guidance for Claude Code agents). See commit that added it.
+
+# .claude/ and .cursor/ are tracked (dogfood): the doccraft skills we
+# ship are derivable from templates/, but OpenSpec's skills and slash
+# commands (.claude/skills/openspec-*, .claude/commands/opsx/,
+# .cursor/skills/openspec-*, .cursor/commands/opsx-*.md) are installed
+# by `openspec init` from an external package and are not regenerable
+# from this repo. Committing the whole dir keeps the in-repo agent
+# environment reproducible without re-running install.
+.claude/settings.local.json
