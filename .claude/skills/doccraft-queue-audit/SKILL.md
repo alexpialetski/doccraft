@@ -13,7 +13,7 @@ description: >-
   unknown depends_on ids, duplicate ids, or ambiguous editorial reorders.
 ---
 
-> Managed by **doccraft** — `doccraft update` regenerates this file. Local edits will be overwritten. See `doccraft.yaml` to override project-specific vocabulary and paths without touching this file.
+> Managed by **doccraft** — `doccraft update` regenerates this file. Local edits will be overwritten. See `doccraft.json` to override project-specific vocabulary and paths without touching this file.
 
 # doccraft — queue, dependency audit, and parallel waves
 

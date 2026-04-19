@@ -1,7 +1,7 @@
 ---
 id: P1.5
 title: Assisted setup and migration — JSON config, doccraft llm, doccraft-config/-update skills
-status: todo
+status: done
 impact: H
 urgency: soon
 tags:
