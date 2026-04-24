@@ -21,6 +21,7 @@ program
   .option('--force', 'Forwarded to openspec init')
   .option('--profile <profile>', 'Forwarded to openspec init')
   .option('--skip-openspec', 'Skip running openspec init (install doccraft skills only)')
+  .option('--features <features>', 'Comma-separated list of optional feature modules to enable (e.g. "business")')
   .action(async (targetPath: string = '.', options) => {
     try {
       await runInit(targetPath, options);

@@ -256,6 +256,23 @@
         }
       }
     },
+    "features": {
+      "title": "Optional feature modules",
+      "description": "Opt-in feature modules to enable. Each entry installs additional skills and activates conditional integration blocks in core skills. Currently supported: \"business\" (startup advisor + docs/business/ integration). Absent or empty means no optional features.",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "business"
+        ]
+      },
+      "examples": [
+        [],
+        [
+          "business"
+        ]
+      ]
+    },
     "sessionWrap": {
       "title": "Session wrap configuration",
       "description": "Controls which artifact categories doccraft-session-wrap considers in scope. Disabling a category prevents the skill from proposing that folder tree.",

@@ -295,7 +295,7 @@ End with a short **Problems** list when any id is missing, cyclic, or
 blocked.
 
 ---
-
+{{BUSINESS_INTEGRATION_BLOCK}}
 ## Optional follow-up template
 
 Use when something cannot be auto-fixed (cycles, ambiguous priority)

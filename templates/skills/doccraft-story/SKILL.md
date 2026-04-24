@@ -174,3 +174,5 @@ OpenSpec recommended because: touches schema + payment service + integration tes
 - After creating a story or changing `depends_on`, invoke
   `doccraft-queue-audit` in the same turn so the working queue stays
   consistent with the dependency graph.
+
+{{BUSINESS_INTEGRATION_BLOCK}}

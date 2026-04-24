@@ -266,6 +266,81 @@ export function applyDocsDir(raw: string, docsDir: string): string {
   return raw.replace(/\{\{DOCS_DIR\}\}/g, docsDir);
 }
 
+const BUSINESS_BLOCK_QUEUE_AUDIT = `
+## Business integration
+
+This project has the \`business\` feature enabled. When resolving priority
+ties that technical context alone cannot break:
+
+1. Read \`{{DOCS_DIR}}/business/launch-sequence.md\` — identify the current
+   phase gate and prefer stories that directly unblock it.
+2. Stories tagged \`theme:business\` rank above same-tier stories without
+   the tag when both are otherwise equivalent.
+3. For priority questions that need deeper context, invoke the
+   \`doccraft-business\` skill before applying edits.
+`;
+
+const BUSINESS_BLOCK_STORY = `
+## Business context
+
+This project has the \`business\` feature enabled. When creating or
+updating a story that affects a product or go-to-market decision:
+
+- Check \`{{DOCS_DIR}}/business/target-audience.md\` to confirm the story
+  serves the primary segment's top-priority problem.
+- Add \`theme:business\` to stories directly linked to a go-to-market
+  milestone (launch readiness, pricing experiments, channel tests).
+- If the story is ambiguous about audience fit, invoke
+  \`doccraft-business\` before committing to acceptance criteria.
+`;
+
+function getSkillFeature(raw: string): string | undefined {
+  const fmMatch = raw.match(/^---\n([\s\S]*?)\n---/);
+  if (!fmMatch) return undefined;
+  const featureMatch = fmMatch[1].match(/^feature:\s*(\S+)/m);
+  return featureMatch?.[1];
+}
+
+function applyBusinessBlock(raw: string, features: string[], skillName: string): string {
+  if (!raw.includes('{{BUSINESS_INTEGRATION_BLOCK}}')) return raw;
+  if (!features.includes('business')) {
+    return raw.replace(/\{\{BUSINESS_INTEGRATION_BLOCK\}\}/g, '');
+  }
+  const block =
+    skillName === 'doccraft-queue-audit'
+      ? BUSINESS_BLOCK_QUEUE_AUDIT
+      : skillName === 'doccraft-story'
+        ? BUSINESS_BLOCK_STORY
+        : '';
+  return raw.replace(/\{\{BUSINESS_INTEGRATION_BLOCK\}\}/g, block);
+}
+
+export async function readFeaturesFromConfig(projectPath: string): Promise<string[]> {
+  const configPath = path.join(projectPath, 'doccraft.json');
+  if (!existsSync(configPath)) return [];
+  try {
+    const raw = await readFile(configPath, 'utf8');
+    const cfg = JSON.parse(raw) as Record<string, unknown>;
+    const features = cfg['features'];
+    if (Array.isArray(features)) {
+      return features.filter((f): f is string => typeof f === 'string');
+    }
+  } catch {}
+  return [];
+}
+
+export async function writeFeaturesToConfig(
+  projectPath: string,
+  features: string[]
+): Promise<void> {
+  const configPath = path.join(projectPath, 'doccraft.json');
+  if (!existsSync(configPath)) return;
+  const raw = await readFile(configPath, 'utf8');
+  const cfg = JSON.parse(raw) as Record<string, unknown>;
+  cfg['features'] = features;
+  await writeFile(configPath, JSON.stringify(cfg, null, 2) + '\n', 'utf8');
+}
+
 /**
  * The single canonical install target for SKILL.md writes.
  *
@@ -327,10 +402,12 @@ export async function installSkills(
   projectPath: string,
   tools: readonly SkillTool[],
   skills?: readonly SkillTemplate[],
-  docsDir?: string
+  docsDir?: string,
+  features?: string[]
 ): Promise<InstalledSkill[]> {
   const available = skills ?? (await getAvailableSkills());
   const effectiveDocsDir = docsDir ?? (await readDocsDirFromConfig(projectPath));
+  const enabledFeatures = features ?? (await readFeaturesFromConfig(projectPath));
   const installed: InstalledSkill[] = [];
 
   for (const tool of tools) {
@@ -338,11 +415,16 @@ export async function installSkills(
 
     for (const skill of available) {
       const raw = await readFile(skill.skillFilePath, 'utf8');
+
+      const requiredFeature = getSkillFeature(raw);
+      if (requiredFeature && !enabledFeatures.includes(requiredFeature)) continue;
+
       const withSchema =
         skill.name === 'doccraft-config'
           ? raw.replace('{{DOCCRAFT_CONFIG_SCHEMA}}', SCHEMA_JSON)
           : raw;
-      const substituted = applyDocsDir(withSchema, effectiveDocsDir);
+      const withBusiness = applyBusinessBlock(withSchema, enabledFeatures, skill.name);
+      const substituted = applyDocsDir(withBusiness, effectiveDocsDir);
       const body = injectManagedHeader(substituted);
       const targetDir = path.join(toolSkillsRoot, skill.name);
       const targetPath = path.join(targetDir, 'SKILL.md');
