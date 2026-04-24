@@ -432,11 +432,30 @@ export async function installSkills(
       await mkdir(targetDir, { recursive: true });
       await writeFile(targetPath, body, 'utf8');
 
+      // Copy bundled assets (references/, scripts/, assets/) verbatim.
+      const skillTemplateDir = path.dirname(skill.skillFilePath);
+      await copySkillAssets(skillTemplateDir, targetDir);
+
       installed.push({ skill: skill.name, tool: tool.id, targetPath });
     }
   }
 
   return installed;
+}
+
+async function copySkillAssets(srcDir: string, destDir: string): Promise<void> {
+  const entries = await readdir(srcDir, { withFileTypes: true });
+  for (const entry of entries) {
+    if (entry.name === 'SKILL.md') continue;
+    const src = path.join(srcDir, entry.name);
+    const dest = path.join(destDir, entry.name);
+    if (entry.isDirectory()) {
+      await mkdir(dest, { recursive: true });
+      await copySkillAssets(src, dest);
+    } else if (entry.isFile()) {
+      await writeFile(dest, await readFile(src), 'utf8');
+    }
+  }
 }
 
 /**
