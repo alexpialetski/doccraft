@@ -13,10 +13,12 @@ import {
   installSkills,
   parseToolsArg,
   readDocsDirFromConfig,
+  readFeaturesFromConfig,
   resolveToolSelection,
   scaffoldDocsIfMissing,
   scaffoldRootConfigIfMissing,
   SUPPORTED_TOOLS,
+  writeFeaturesToConfig,
   type SkillTool,
 } from '../utils/skills.js';
 
@@ -25,6 +27,7 @@ export interface InitOptions {
   force?: boolean;
   profile?: string;
   skipOpenspec?: boolean;
+  features?: string;
 }
 
 export async function runInit(targetPath: string, options: InitOptions): Promise<void> {
@@ -34,7 +37,14 @@ export async function runInit(targetPath: string, options: InitOptions): Promise
   console.log(chalk.dim(`Target: ${resolvedPath}\n`));
 
   const toolsArg = await resolveToolSelection(options.tools);
+  const features = options.features
+    ? options.features.split(',').map((s) => s.trim()).filter(Boolean)
+    : undefined;
+
   console.log(chalk.dim(`Tools: ${formatToolsArg(toolsArg)}`));
+  if (features && features.length > 0) {
+    console.log(chalk.dim(`Features: ${features.join(', ')}`));
+  }
   printCursorVersionNoteIfNeeded(toolsArg);
   console.log('');
 
@@ -51,7 +61,7 @@ export async function runInit(targetPath: string, options: InitOptions): Promise
     console.log(chalk.dim('Skipping openspec init (--skip-openspec)'));
   }
 
-  await installDoccraftSkills(resolvedPath, toolsArg);
+  await installDoccraftSkills(resolvedPath, toolsArg, features);
 
   console.log(chalk.green('\nDone.'));
 }
@@ -86,7 +96,8 @@ function printCursorVersionNoteIfNeeded(toolsArg: string): void {
  */
 export async function installDoccraftSkills(
   projectPath: string,
-  toolsArg: string | undefined
+  toolsArg: string | undefined,
+  features?: string[]
 ): Promise<void> {
   const rootConfigCreated = await scaffoldRootConfigIfMissing(projectPath);
   const scaffolded = await scaffoldDocsIfMissing(projectPath);
@@ -95,7 +106,14 @@ export async function installDoccraftSkills(
     console.log(chalk.dim(`\nScaffolded ${allCreated.length} file(s): ${allCreated.join(', ')}`));
   }
 
+  // If features were passed explicitly, persist them to config so future
+  // `doccraft update` runs see the same selection without a flag.
+  if (features && features.length > 0) {
+    await writeFeaturesToConfig(projectPath, features);
+  }
+
   const docsDir = await readDocsDirFromConfig(projectPath);
+  const enabledFeatures = features ?? (await readFeaturesFromConfig(projectPath));
   const skills = await getAvailableSkills();
   const rules = await getAvailableRules();
   if (skills.length === 0 && rules.length === 0) {
@@ -123,7 +141,7 @@ export async function installDoccraftSkills(
   ).start();
 
   try {
-    await installSkills(projectPath, [canonicalSkillsTool], skills, docsDir);
+    await installSkills(projectPath, [canonicalSkillsTool], skills, docsDir, enabledFeatures);
     const installedRules = await installRules(projectPath, tools, rules, docsDir);
 
     const skillsSummary = `${skills.length} skill(s) into ${canonicalSkillsTool.skillsDir}`;
