@@ -58,8 +58,8 @@ Relevant keys:
 
 **Reads:**
 - `{{DOCS_DIR}}/stories/*.md` — YAML frontmatter (`id`, `status`, `impact`,
-  `urgency`, `depends_on`, `tags`, `openspec`, `roadmap_ref`, optional
-  `openspec_change`).
+  `urgency`, `depends_on`, `tags`, `openspec`, optional `designer`,
+  `roadmap_ref`, optional `openspec_change`).
 - `{{DOCS_DIR}}/queue.md` — the *Suggested order* table, plus *Platform spikes*
   when parallel waves are in scope.
 - `{{DOCS_DIR}}/backlog.md` — the *Story files* table and the *Status* column.
@@ -167,6 +167,15 @@ the fields that matter are:
   satisfied.
 - `roadmap_ref` — ties the story to its `{{DOCS_DIR}}/backlog.md` row for the
   backlog-drift check.
+- `designer` — optional; when **absent**, do not apply any design-readiness gate.
+
+## Design readiness (advisory)
+
+When **any** story has `designer: required` in frontmatter:
+
+1. Check whether a **`.design/`** directory exists at the **project root** (sibling of `doccraft.json`).
+2. If it is **missing**, add a short **advisory** line to the audit output (under **Issues** or **Remaining proposals**): required design work is signaled but no `.design/` tree was found — suggest creating it or reconciling the story field. This is **not** a hard error and must not block auto-apply rules for queue or dependency fixes.
+3. If `designer` is omitted, `not-needed`, or `recommended` only, skip this check.
 
 ## Graph checks
 

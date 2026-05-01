@@ -49,6 +49,14 @@ describe('doccraft CLI', () => {
     expect(output).toContain('update');
     expect(output).toContain('llm');
   });
+
+  it('init --help documents design in --features option', () => {
+    const output = execFileSync(process.execPath, [binPath, 'init', '--help'], {
+      encoding: 'utf8',
+    });
+    expect(output).toContain('--features');
+    expect(output).toContain('design');
+  });
 });
 
 describe('build output — version placeholder substitution', () => {

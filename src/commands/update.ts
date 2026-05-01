@@ -32,6 +32,7 @@ export async function runUpdate(targetPath: string, options: UpdateOptions): Pro
     console.log(chalk.dim('Skipping openspec update (--skip-openspec)'));
   }
 
+  // installDoccraftSkills reads doccraft.json features and replays designer-skills when `design` is enabled.
   await installDoccraftSkills(resolvedPath, options.tools);
   await bumpConfigVersion(resolvedPath, PACKAGE_VERSION);
 

@@ -1,6 +1,7 @@
 import path from 'node:path';
 import chalk from 'chalk';
 import ora from 'ora';
+import { runDesignerSkillsInstall } from '../utils/designer-skills.js';
 import { runOpenspec } from '../utils/openspec.js';
 import {
   detectInstalledTools,
@@ -93,6 +94,11 @@ function printCursorVersionNoteIfNeeded(toolsArg: string): void {
  *   4. **Stale-cursor advisory** — if doccraft-owned dirs exist under
  *      `.cursor/skills/` (from a pre-ADR-007 install), print a copy-
  *      pasteable cleanup command. Non-destructive.
+ *
+ * When `doccraft.json` `features` includes `design` (including after
+ * `doccraft init --features design`), **designer-skills** are installed via
+ * `npx` before the early return for `--tools none`. `doccraft update` replays
+ * the same step whenever `design` remains in config.
  */
 export async function installDoccraftSkills(
   projectPath: string,
@@ -114,6 +120,12 @@ export async function installDoccraftSkills(
 
   const docsDir = await readDocsDirFromConfig(projectPath);
   const enabledFeatures = features ?? (await readFeaturesFromConfig(projectPath));
+
+  if (enabledFeatures.includes('design')) {
+    console.log(chalk.dim('\nInstalling designer-skills...'));
+    await runDesignerSkillsInstall(projectPath);
+  }
+
   const skills = await getAvailableSkills();
   const rules = await getAvailableRules();
   if (skills.length === 0 && rules.length === 0) {
