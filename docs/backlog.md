@@ -31,6 +31,7 @@ rules and the Story-files coverage invariant.
 |----|------|--------|
 | P2.1 | Parallel-waves split watch — observe whether parallel-waves deserves its own skill | planned |
 | P2.2 | Docs-maintenance skill family (freshness audits, cross-ref integrity, doc-tree search) | planned |
+| P2.3 | Design feature opt-in — subprocess install of designer-skills + `designer:` story field | planned |
 
 ### P3 — speculative (ideas, may be cut)
 
@@ -59,6 +60,7 @@ Detailed acceptance criteria for the items above. Queue rows in
 | P1.5 | [Assisted setup and migration — JSON config, doccraft llm, config/update skills](stories/p1-assisted-setup-and-migration.md) |
 | P2.1 | [Parallel-waves split watch](stories/p2-parallel-waves-split-watch.md) |
 | P2.2 | [Docs-maintenance skill family](stories/p2-docs-maintenance-skills.md) |
+| P2.3 | [Design feature opt-in — subprocess install + designer story field](stories/p2-design-feature.md) |
 
 ## NFRs and cross-cutting
 

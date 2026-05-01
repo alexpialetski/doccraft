@@ -5,8 +5,10 @@ Guidance for Claude Code agents working in this repo.
 ## What doccraft is
 
 An npm CLI that installs an opinionated, small set of docs-folder skills
-for Claude Code and Cursor, layered on OpenSpec. Ships four skills
-(authored in `templates/skills/`):
+for Claude Code and Cursor, layered on OpenSpec. On `doccraft init`,
+doccraft first runs `openspec init` as a subprocess (installing OpenSpec's
+own skills and slash commands), then installs its own skills on top.
+Ships four core skills (authored in `templates/skills/`):
 
 | Skill | Use for |
 |-------|---------|
@@ -84,7 +86,7 @@ are user-owned artifacts and neither init nor update regenerates them.
 | [`src/commands/init.ts`](src/commands/init.ts) | `runInit`, `installDoccraftSkills` |
 | [`src/commands/update.ts`](src/commands/update.ts) | `runUpdate` |
 | [`src/utils/skills.ts`](src/utils/skills.ts) | Tool resolution, install, scaffold helpers |
-| [`src/utils/openspec.ts`](src/utils/openspec.ts) | Subprocess bridge to `@fission-ai/openspec` |
+| [`src/utils/openspec.ts`](src/utils/openspec.ts) | Spawns `openspec init`/`update` as a subprocess; doccraft's own skill install runs after openspec completes |
 | [`docs/adr/`](docs/adr/) | ADRs — every significant design decision |
 | [`docs/stories/`](docs/stories/) | Story specs per `doccraft-story` |
 
