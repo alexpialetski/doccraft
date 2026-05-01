@@ -16,6 +16,10 @@ Documentation and project-story skills for [Claude Code](https://claude.com/clau
 - **`doccraft-config`** — tailor `doccraft.json` to your project. Analyse mode proposes values; edit mode validates targeted changes against the embedded JSON Schema.
 - **`doccraft-update`** — upgrade doccraft and the bundled OpenSpec. Silent when no migration applies; summarises and gates when one does.
 
+### Optional features
+
+Pass **`--features`** on **`doccraft init`** (comma-separated) to opt into extra modules. Choices are **`business`** (startup-advisor skill and `docs/business/` integration in core skills) and **`design`** (installs [designer-skills](https://github.com/julianoczkowski/designer-skills) and enables designer-related story guidance). Selected values are stored in `doccraft.json` under `features` and replayed on **`doccraft update`**.
+
 Skills install to `.claude/skills/` (read natively by Claude Code; auto-discovered by Cursor 2.4+). Cursor also gets rule stubs under `.cursor/rules/` that auto-attach when editing docs.
 
 ## Install
