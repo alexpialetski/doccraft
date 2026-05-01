@@ -67,16 +67,26 @@ Use valid YAML between `---` delimiters at the top of the file.
 | `urgency` | yes | `now` \| `soon` \| `later` — time sensitivity or deadline pressure. |
 | `tags` | yes | YAML list of **prefixed** strings (`area:`, `slice:`, `theme:`) from the vocabulary below. If nothing fits and the label will recur, extend this skill in the same change (see **Extending the vocabulary**). |
 | `openspec` | yes | `not-needed` \| `recommended` \| `required` — whether OpenSpec-style spec work fits before coding. |
+| `designer` | optional | `not-needed` \| `recommended` \| `required` — whether a design pass (e.g. Figma, UX spec) should precede UI implementation. **Omit** when not using the design workflow; omission is valid and queue-audit treats it as no design gate. |
 | `updated` | recommended | ISO date `YYYY-MM-DD` when the story last changed meaningfully. |
 | `roadmap_ref` | optional | e.g. `P1.7` — pointer to the backlog row when applicable. |
 | `depends_on` | optional | YAML list of **story `id` values** that must be satisfied **before** this story is picked up (prerequisites). Omit or `[]` if none. Each entry must match another story's `id` or a backlog id you intentionally treat as external — prefer real story ids so the queue-audit graph stays honest. |
 | `adr_refs` | optional | List of ADR filenames this story implements or contradicts (e.g. `001-foo.md`). |
 | `openspec_change` | optional | Path or name of the OpenSpec change folder when one exists. |
 
-> Do not invent new values for `status`, `impact`, `urgency`, or `openspec`
-> without updating this skill in the same change — the enum tables above are
-> the single source of truth. One-off nuance belongs in the body, not as a
-> new enum value.
+> Do not invent new values for `status`, `impact`, `urgency`, `openspec`, or
+> `designer` (when present) without updating this skill in the same change —
+> the enum tables above are the single source of truth. One-off nuance belongs
+> in the body, not as a new enum value.
+
+### `designer` guidance
+
+Use only when the project tracks design readiness in stories (typically with the
+`design` doccraft feature). Otherwise **omit** the field entirely.
+
+- **`not-needed`** — UI change is trivial, copy-only, or reuses an existing design system without new visuals.
+- **`recommended`** — new or changed user-facing surfaces where a short design pass reduces rework; note in the body *Designer recommended because: …*
+- **`required`** — policy or risk level demands design sign-off before implementation starts.
 
 ### `openspec` guidance
 
@@ -144,6 +154,7 @@ tags:
   - area:api
   - area:data
 openspec: recommended
+designer: recommended
 updated: 2026-04-18
 roadmap_ref: P0.3
 depends_on: []

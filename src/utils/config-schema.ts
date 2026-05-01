@@ -187,10 +187,10 @@ export const DOCCRAFT_CONFIG_SCHEMA = {
     features: {
       title: 'Optional feature modules',
       description:
-        'Opt-in feature modules to enable. Each entry installs additional skills and activates conditional integration blocks in core skills. Currently supported: "business" (startup advisor + docs/business/ integration). Absent or empty means no optional features.',
+        'Opt-in feature modules to enable. Each entry installs additional skills and activates conditional integration blocks in core skills. Currently supported: "business" (startup advisor + docs/business/ integration), "design" (designer-skills via npx during init/update). Absent or empty means no optional features.',
       type: 'array',
-      items: { type: 'string', enum: ['business'] },
-      examples: [[], ['business']],
+      items: { type: 'string', enum: ['business', 'design'] },
+      examples: [[], ['business'], ['design'], ['business', 'design']],
     },
     sessionWrap: {
       title: 'Session wrap configuration',

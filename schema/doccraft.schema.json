@@ -258,18 +258,26 @@
     },
     "features": {
       "title": "Optional feature modules",
-      "description": "Opt-in feature modules to enable. Each entry installs additional skills and activates conditional integration blocks in core skills. Currently supported: \"business\" (startup advisor + docs/business/ integration). Absent or empty means no optional features.",
+      "description": "Opt-in feature modules to enable. Each entry installs additional skills and activates conditional integration blocks in core skills. Currently supported: \"business\" (startup advisor + docs/business/ integration), \"design\" (designer-skills via npx during init/update). Absent or empty means no optional features.",
       "type": "array",
       "items": {
         "type": "string",
         "enum": [
-          "business"
+          "business",
+          "design"
         ]
       },
       "examples": [
         [],
         [
           "business"
+        ],
+        [
+          "design"
+        ],
+        [
+          "business",
+          "design"
         ]
       ]
     },
