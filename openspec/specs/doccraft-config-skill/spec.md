@@ -55,7 +55,7 @@ The rendered `doccraft-config` SKILL.md SHALL include a section titled "Model hi
 - **WHEN** `doccraft init` or `doccraft update` writes the `doccraft-config` SKILL.md
 - **THEN** the rendered file contains a section whose heading is "Model hints registry" or equivalent
 - **THEN** the section explains that `story.modelHints` points at a project-owned markdown file
-- **THEN** the section names the recommended file structure (available models, optional phases and roles, decision rules, optional per-story mapping) without enforcing it
+- **THEN** the section names the recommended file structure (available models, optional phases and roles, decision rules) without enforcing it
 
 ### Requirement: doccraft-config skill offers a tailoring flow when the registry matches the bundled starter
 The `doccraft-config` SKILL.md SHALL instruct the skill to offer a tailoring flow that walks the user through replacing the neutral starter with the project's actual model ecosystem, but only when the registry file at the configured path appears to match the bundled starter.
