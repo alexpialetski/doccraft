@@ -29,7 +29,7 @@ No interactive prompts. No new runtime calls. The user-facing surface is only th
 
 - Inline registry inside `doccraft.json` (rejected — complicates schema; markdown is the right format for human-readable per-task guidance).
 - Validating the registry file's content or shape (rejected — it is project-owned).
-- A `model_hint:` frontmatter field with a fixed enum (rejected — labels are project-defined).
+- **Dedicated frontmatter field for model choice with a fixed enum** — Rejected; keeps vocabulary project-owned in the registry and Notes prose.
 - A `features` enum entry (rejected — `features` is for package-level opt-ins that install skills or run subprocesses; this adds neither).
 - Interactive prompts in `init` or `update` (rejected — discovery is via the migration manifest for existing projects and the default scaffold for new ones; both are pre-existing channels).
 - Doccraft-side knowledge of model topology (local/cloud/mixed/etc.). The block stays runtime-agnostic; the registry decides which axes matter.
@@ -87,12 +87,12 @@ Rendered into `doccraft-story` SKILL.md only. Runtime-agnostic; the registry dec
 
 This project's `doccraft.json` declares `story.modelHints: "<PATH>"`. Before authoring or editing a story:
 
-1. **Read** the registry at `<PATH>`. Treat it as the project's source of truth for which models are appropriate for which kind of work, and how to combine them when a story benefits from more than one.
-2. **Combine the registry's guidance with the story's context** — tags, impact, urgency, body — to choose a recommendation. The registry defines which axes matter (e.g. cost, speed, reasoning depth, code-grounding, runtime); doccraft does not.
-3. **Suggest a `model_hint:` annotation** in the story's Notes section using *only* the labels the registry defines. Do not invent new labels — if nothing fits, propose extending the registry instead.
-4. When updating an existing story, leave the existing `model_hint:` line in place unless it contradicts the story body or the registry's guidance has changed.
+1. **Read** the registry at `<PATH>`. Treat it as the project's source of truth for which models or tiers fit which kind of work — including when different phases (e.g. spec or OpenSpec work vs implementation vs review) warrant different trade-offs.
+2. **Combine the registry with the story's context** — tags, impact, urgency, body, `openspec` — so guidance matches the real workflow. The registry may describe phase-specific choices; reflect that in closing Notes prose.
+3. **Append model guidance as regular markdown at the end of the story's Notes section** — after other Notes content, plain sentences only. The registry informs what to say; express it as normal Notes prose. A final **Models / workflow** subsection at the bottom of Notes is fine when the story is long.
+4. When updating a story, revise that closing Notes guidance when the body, registry, or phase mix changed; keep wording that still applies.
 
-The label vocabulary, the model list, and the decision rules are **project-defined**, not doccraft-defined. The registry is the contract.
+The registry content is **project-defined**, not doccraft-defined. The registry is the contract.
 ```
 
 `doccraft-queue-audit` is **not** changed in this iteration — model hints do not affect dependency graphs or queue ordering.
@@ -102,8 +102,8 @@ The label vocabulary, the model list, and the decision rules are **project-defin
 A new section in `templates/skills/doccraft-config/SKILL.md` (between "Modes" and "Constraints") titled **"Model hints registry"**:
 
 - Explains that `story.modelHints` points at a project-owned markdown file describing which models are appropriate for which work.
-- Documents the recommended sections of that file (Available Models, Label Vocabulary, Decision Rules, optional Per-story Mapping). The skill *describes* the conventions but does not enforce them — the file is project-owned.
-- Provides a recommended tailoring flow: when the user invokes `doccraft-config`, the skill should offer to walk them through replacing the neutral starter content with the project's actual models and labels, *if and only if* `story.modelHints` is set and the file currently matches the bundled starter (heuristic: file size and header match).
+- Documents the recommended sections of that file (Available models, optional phases/roles, decision rules, optional per-story mapping). The skill *describes* the conventions but does not enforce them — the file is project-owned.
+- Provides a recommended tailoring flow: when the user invokes `doccraft-config`, the skill should offer to walk them through replacing the neutral starter content with the project's actual models and workflows, *if and only if* `story.modelHints` is set and the file currently matches the bundled starter (heuristic: file size and header match).
 - Explicit constraint: the skill MUST NOT validate the registry's content beyond confirming the file exists at the configured path. If the file is custom, leave it alone.
 
 ### Registry file shape (advisory, not mandated)
@@ -111,8 +111,8 @@ A new section in `templates/skills/doccraft-config/SKILL.md` (between "Modes" an
 The change ships a **neutral template** at `templates/docs/reference/model-hints.md`. The schema does not enforce its structure. Suggested sections:
 
 - **Available models** — placeholder rows the user fills in with whichever models they have access to.
-- **Label vocabulary** — placeholder labels with one-line guidance per label, framed as project-defined examples.
-- **Decision rules** (optional) — how labels combine for a given story. May describe a single model, an ordered fallback chain, or multiple models in collaboration.
+- **Phases and roles** (optional) — prose or a small table for different parts of the work (e.g. OpenSpec vs implementation) and which model fits each; stories capture this as closing Notes prose only.
+- **Decision rules** (optional) — how guidance combines with story context; may describe multiple models across phases.
 - **Per-story mapping** (optional) — empty table for an authoritative live list.
 
 The template explicitly does not assume local-vs-cloud, free-vs-paid, fast-vs-slow, single-model-vs-combination, or any other axis. It is the *contract about how to describe a project's setup*, not a reflection of any one project's setup.
@@ -120,8 +120,8 @@ The template explicitly does not assume local-vs-cloud, free-vs-paid, fast-vs-sl
 ## Risks / Trade-offs
 
 - **Registry file drift** — the file is project-owned, so it can become stale. Mitigation: the rendered block tells the agent to read it on every story authoring/edit; staleness becomes visible at story-author time.
-- **Label vocabulary becomes a snowflake per project** — accepted; same trade-off as `area:`/`slice:`/`theme:` tags being project-defined.
-- **No schema validation on registry content** — accepted; doccraft does not own the labels.
+- **Label vocabulary becomes a snowflake per project** — not applicable by default; closing Notes prose is the single agreed surface.
+- **No schema validation on registry content** — accepted; doccraft does not own the prose conventions inside the file.
 - **Default scaffold ships an extra file** (`docs/reference/model-hints.md`). Mitigation: the file is short, neutral, and clearly marked as project-owned. Projects that don't want it can delete the file and remove `story.modelHints` from `doccraft.json` after `init`.
 - **Migration in an existing project that already has a file at `docs/reference/model-hints.md`**: the migration step is "create if missing", never "overwrite". Mitigation explicit in the manifest's `steps[]`.
 

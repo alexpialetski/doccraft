@@ -52,6 +52,8 @@ Invoke the **`doccraft-update`** skill. It reads the `version` stamp in `doccraf
 - `version` and the URL's version segment are managed by doccraft (`init` writes them, `update` bumps them together; nothing else in the file is touched).
 - Every other key is user-owned. Deleting the file falls back to in-skill defaults.
 
+Optional **`story.modelHints`** points at a markdown file (for example `docs/reference/model-hints.md`) that describes which models suit which work in *your* environment. When set, the installed `doccraft-story` skill gains a short **Model hints** section that tells the agent to read that file and **append plain markdown at the end of story Notes**. Doccraft does not validate the registry file — it is entirely project-owned.
+
 ## Commands
 
 - **`doccraft init [path]`** — scaffolds `doccraft.json`, installs skills, runs `openspec init`.

@@ -186,4 +186,4 @@ OpenSpec recommended because: touches schema + payment service + integration tes
   `doccraft-queue-audit` in the same turn so the working queue stays
   consistent with the dependency graph.
 
-{{BUSINESS_INTEGRATION_BLOCK}}
+{{BUSINESS_INTEGRATION_BLOCK}}{{MODEL_HINTS_INTEGRATION_BLOCK}}

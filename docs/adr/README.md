@@ -21,3 +21,4 @@ explicit Status and supersession).
 | [006](006-doccraft-owns-tool-selection.md) | doccraft owns tool selection in init; forwards `--tools` to openspec | Accepted |
 | [007](007-default-skill-install-to-claude-skills.md) | Install skills only to `.claude/skills/`; `.cursor/skills/` is never written | Accepted |
 | [008](008-doccraft-yaml-at-root-with-docsdir.md) | Move config to `doccraft.yaml` at project root with single `docsDir` key | Accepted |
+| [012](012-story-model-hints-registry.md) | Optional `story.modelHints` path + project-owned registry markdown | Accepted |

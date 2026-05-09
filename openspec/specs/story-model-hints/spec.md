@@ -7,14 +7,14 @@ The integration block SHALL:
 
 1. Cite the registry file path verbatim from `doccraft.json.story.modelHints` (with `{{DOCS_DIR}}` substituted as needed).
 2. Instruct the skill to read the registry before authoring or editing a story.
-3. Instruct the skill to suggest a `model_hint:` annotation in the story's Notes section using only labels defined in the registry.
-4. Make explicit that the label vocabulary is project-defined, not doccraft-defined.
+3. Instruct the skill to **append plain markdown at the end of the story's Notes** — after other Notes content, normal sentences only.
+4. Make explicit that the registry content is project-defined, not doccraft-defined.
 
 #### Scenario: Block rendered when modelHints is set
 - **WHEN** `doccraft init` or `doccraft update` runs against a config containing `story.modelHints: "docs/reference/model-hints.md"`
 - **THEN** the installed `.claude/skills/doccraft-story/SKILL.md` contains a "Model hints" section
 - **THEN** the section references the path `docs/reference/model-hints.md` literally
-- **THEN** the section instructs the skill to read the registry and suggest a `model_hint:` Notes annotation using only registry-defined labels
+- **THEN** the section instructs the skill to read the registry and append model guidance as plain markdown **at the end of Notes**
 
 #### Scenario: Block omitted when modelHints is unset
 - **WHEN** `doccraft init` or `doccraft update` runs against a config without `story.modelHints`
@@ -27,7 +27,7 @@ The integration block SHALL:
 - **THEN** the rendered SKILL.md is identical to the variant produced when the field is absent
 
 ### Requirement: Registry file content is project-owned and unvalidated by doccraft
-Doccraft SHALL NOT validate the structure or label vocabulary of the file referenced by `story.modelHints`. The skill block SHALL instruct agents to use whatever labels the registry establishes; doccraft itself SHALL NOT enforce a fixed enum.
+Doccraft SHALL NOT validate the structure or wording of the file referenced by `story.modelHints`. The skill block SHALL instruct agents to follow the registry when appending closing Notes prose; doccraft itself SHALL NOT parse registry content at install time or enforce a fixed vocabulary in story files.
 
 #### Scenario: Missing registry file does not fail installation
 - **WHEN** `doccraft init` or `doccraft update` runs and the path in `story.modelHints` does not exist on disk

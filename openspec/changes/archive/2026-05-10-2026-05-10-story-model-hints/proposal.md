@@ -13,7 +13,7 @@ This change introduces a project-owned **model registry** referenced from `doccr
 ## What Changes
 
 - Add an optional `story.modelHints` field to `doccraft.json`. The value is a **string path** (relative to project root) pointing at a project-owned markdown file.
-- When the field is present and non-empty, the rendered `doccraft-story` SKILL.md (produced at install/update time) gains an integration block that instructs the skill to read the registry file and combine its guidance with the story's context to suggest a `model_hint:` annotation.
+- When the field is present and non-empty, the rendered `doccraft-story` SKILL.md (produced at install/update time) gains an integration block that instructs the skill to read the registry file, combine its guidance with the story's context, and **append plain markdown at the end of story Notes**.
 - When the field is absent or empty, the rendered SKILL.md is unchanged from today.
 - **Default scaffold** ships the field populated and the file present:
   - `templates/doccraft.json` — `story.modelHints: "docs/reference/model-hints.md"`.

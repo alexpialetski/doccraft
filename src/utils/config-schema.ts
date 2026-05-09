@@ -79,6 +79,17 @@ export const DOCCRAFT_CONFIG_SCHEMA = {
             ['observability', 'reliability', 'compliance'],
           ],
         },
+        modelHints: {
+          title: 'Model hints registry path',
+          description:
+            'Optional path to a project-owned markdown file (relative to the project root) describing which models suit which work and how to label recommendations. When set, the rendered doccraft-story skill includes an integration block that points agents at this file before authoring stories. doccraft does not validate the file contents — the registry is entirely project-defined.',
+          type: 'string',
+          examples: [
+            'docs/reference/model-hints.md',
+            'planning/models.md',
+            '.doccraft/model-hints.md',
+          ],
+        },
         id: {
           title: 'Story identifier format',
           description:

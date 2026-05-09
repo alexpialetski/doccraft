@@ -4,6 +4,7 @@
   "_hint": "Edit with the doccraft-config skill (npx doccraft@latest llm exposes the schema).",
   "docsDir": "docs",
   "story": {
+    "modelHints": "docs/reference/model-hints.md",
     "areas": ["api", "cli", "auth", "data", "infra", "schemas"],
     "slices": ["ui", "admin", "onboarding"],
     "themes": ["observability", "performance", "security", "docs", "testing"],
