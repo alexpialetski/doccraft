@@ -60,10 +60,10 @@ This change spans:
 
 `doccraft init` and `doccraft update` get a small **assisted-setup** prompt for model hints, gated as follows:
 
-- **`init`**: after persisting other fields, ask: *"Enable per-story model hints? (Helps annotate stories with which local/cloud model is safe to use.)"* Three answers:
+- **`init`**: after persisting other fields, ask: *"Enable per-story model hints? (Helps annotate stories with which model is appropriate for the work.)"* Three answers:
   - `no` → skip; `story.modelHints` not written.
   - `existing path` → user types or accepts the suggested path; written into config without checking the file exists (warn if missing).
-  - `scaffold` → create a starter file at `docs/reference/model-hints.md` (or a path the user gives) using a minimal template that says "describe your local and cloud models here; use any label vocabulary you like". The LLM running `doccraft` can extend this scaffold with the user's actual model list — that part is *user × agent*, not part of doccraft's job.
+  - `scaffold` → create a starter file at `docs/reference/model-hints.md` (or a path the user gives) from a neutral template that explains how to describe the project's available models and label vocabulary. The template makes no assumption about whether models are local, cloud, or mixed. The LLM running `doccraft` can extend the scaffold with the user's actual model list — that step is *user × agent*, not part of doccraft's job.
 
 - **`update`**: when the resolved config does **not** have `story.modelHints` and the version stamp is being bumped past the version that introduced it, emit a single-line migration hint suggesting the user run `doccraft-config` to enable the feature. Do **not** prompt interactively during update unless the user asked for assisted setup explicitly.
 
@@ -79,25 +79,26 @@ This change spans:
 
 This project's `doccraft.json` declares `story.modelHints: "<PATH>"`. Before authoring or editing a story:
 
-1. **Read** the registry at `<PATH>`. Treat it as the project's source of truth for which local and cloud models are appropriate for which kind of work.
-2. **Suggest a `model_hint:` annotation** in the story's Notes section using *only* the labels the registry defines. Do not invent new labels — if nothing fits, propose extending the registry instead.
-3. When updating an existing story, leave the existing `model_hint:` line in place unless it contradicts the story body or the registry's guidance has changed.
+1. **Read** the registry at `<PATH>`. Treat it as the project's source of truth for which models are appropriate for which kind of work, and how to combine them when a story benefits from more than one.
+2. **Combine the registry's guidance with the story's context** — tags, impact, urgency, body — to choose a recommendation. The registry defines which axes matter (e.g. cost, speed, reasoning depth, code-grounding, runtime); doccraft does not.
+3. **Suggest a `model_hint:` annotation** in the story's Notes section using *only* the labels the registry defines. Do not invent new labels — if nothing fits, propose extending the registry instead.
+4. When updating an existing story, leave the existing `model_hint:` line in place unless it contradicts the story body or the registry's guidance has changed.
 
-The label vocabulary is **project-defined**, not doccraft-defined. Examples a project might pick: `local-coder-ok`, `cloud-default`, `cloud-grounded`, `cloud-arch`. Whatever the registry establishes is the contract.
+The label vocabulary, the model list, and the decision rules are **project-defined**, not doccraft-defined. The registry is the contract.
 ```
 
 The block is rendered into `doccraft-story` SKILL.md only. `doccraft-queue-audit` is **not** changed in this iteration — model hints do not affect dependency graphs, urgency, or queue ordering.
 
 ### Registry file shape (advisory, not mandated)
 
-The change ships a **template** for `docs/reference/model-hints.md` that users can edit, but the schema does not enforce its structure. The template demonstrates the conventions:
+The change ships a **neutral template** for `docs/reference/model-hints.md` that users can edit, but the schema does not enforce its structure. The template demonstrates the conventions without prescribing a topology:
 
-- A short summary of the local fleet (e.g. via llama-swap).
-- A summary of available cloud models (e.g. Cursor's tiers).
-- A label vocabulary (the project's labels, not doccraft's) with one-line guidance per label.
-- Optionally a "live mapping" of stories → labels.
+- An "Available models" section the user fills in with whatever models the project has access to (one model per row or short paragraph).
+- A "Label vocabulary" section where the user defines the labels they will use and what each label means.
+- Optionally a "Decision rules" section describing how the labels combine for a given story (e.g. when a label maps to a single model vs an ordered fallback chain).
+- Optionally a "Per-story mapping" table for an authoritative live list.
 
-Projects with no llama-swap fleet still benefit from the file as a cloud-only routing guide.
+The template explicitly does not assume local-vs-cloud, free-vs-paid, fast-vs-slow, single-model-vs-combination, or any other axis. Projects with one cloud provider, projects with a multi-tier cloud setup, projects with multiple local models swapped through a supervisor, and projects mixing all of the above all describe their setup the same way: in their own words, in their own registry.
 
 ## Risks / Trade-offs
 
