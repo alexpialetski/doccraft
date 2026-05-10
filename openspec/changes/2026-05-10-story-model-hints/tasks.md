@@ -33,11 +33,15 @@
 
 ## 5. Registry file template
 
-- [ ] 5.1 Add `templates/docs/reference/model-hints.md` containing a minimal skeleton:
+- [ ] 5.1 Add `templates/docs/reference/model-hints.md` as a **neutral skeleton** that does not assume the project's model topology:
   - Header explaining the file is project-owned and the schema does not validate its content.
-  - Example sections: "Local fleet" (placeholder), "Cloud models" (placeholder), "Label vocabulary" (placeholder with two-three example labels), "Per-story mapping" (empty table).
+  - "Available models" section with placeholder rows the user fills in with whichever models they have (no local/cloud framing).
+  - "Label vocabulary" section with placeholder labels and one-line guidance per label, framed as project-defined examples only.
+  - "Decision rules" section (optional content, mandatory header) explaining how labels combine for a story — single model, ordered fallback, multi-model collaboration — left for the user to fill in.
+  - "Per-story mapping" empty table.
   - Footer pointer to the originating change so future doccraft versions can update the template via `doccraft update` if needed.
-- [ ] 5.2 Wire the template into the `init --scaffold` path under task 3.4.
+- [ ] 5.2 Verify the template makes no reference to specific runtimes (no `llama-swap`, no `cursor`, no `qwen`, no specific cloud provider). The template is the *contract about how to describe a project's setup*, not a reflection of any one project's setup.
+- [ ] 5.3 Wire the template into the `init --scaffold` path under task 3.4.
 
 ## 6. Documentation
 
@@ -53,12 +57,14 @@
 - [ ] 7.4 Tag release; GitHub Action publishes to npm.
 - [ ] 7.5 Verify jsDelivr serves the new schema at `https://cdn.jsdelivr.net/npm/doccraft@<NEW>/schema/doccraft.schema.json`.
 
-## 8. Downstream verification (audio-stage as test bed)
+## 8. Downstream verification (any consuming project as test bed)
 
-After release, in the `audio-stage` repo:
+After release, in any project that has opted in:
 
 - [ ] 8.1 Run `doccraft update`. Expect: version bump in `doccraft.json`, migration hint emitted on the **first** update, marker key written.
-- [ ] 8.2 Set `story.modelHints: "docs/reference/model-hints.md"` and re-render skills (`doccraft update`). Expect: `.claude/skills/doccraft-story/SKILL.md` and the equivalent under `.cursor/skills/` now contain the integration block with the substituted path.
-- [ ] 8.3 Author the registry file with the project-specific labels (`local-coder-ok`, `cloud-default`, etc., per the conversation that motivated this change).
-- [ ] 8.4 Add `Notes: model_hint: <label>` lines to the four implementation stories (`p1-model-host-fastapi-shim`, `p1-llama-swap-llm-serving`, `p1-bge-small-embedder-migration`, `p1-silero-tts-engine`).
+- [ ] 8.2 Set `story.modelHints: "<project-chosen-path>"` and re-render skills (`doccraft update`). Expect: `.claude/skills/doccraft-story/SKILL.md` and the equivalent under `.cursor/skills/` now contain the integration block with the substituted path.
+- [ ] 8.3 Author the registry file with whatever model list and label vocabulary the project chooses. Verify the rendered SKILL.md instructs the agent to read this file and use *its* labels (not any baked into doccraft).
+- [ ] 8.4 Author or edit at least one story with the skill active; verify the agent suggests a `model_hint:` Notes line drawn from the registry's labels and grounded in the story's tags/impact/urgency/body.
 - [ ] 8.5 Confirm `doccraft-queue-audit` runs unchanged and emits no spurious advisory.
+
+The verification is intentionally project-agnostic: it must work for projects with one cloud model, multiple cloud tiers, one or more local models, or any mix.
