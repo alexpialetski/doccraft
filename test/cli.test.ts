@@ -23,7 +23,7 @@ interface LlmManifest {
   bundledOpenspecVersion: string;
   schema: Record<string, unknown>;
   skills: Array<{ name: string; purpose: string }>;
-  migrations: unknown[];
+  migrations: Array<{ from: string; to: string; summary: string; steps: string[] }>;
 }
 
 function getLlmManifest(): LlmManifest {
@@ -109,8 +109,15 @@ describe('doccraft llm', () => {
     expect(getLlmManifest().bundledOpenspecVersion).toBeTruthy();
   });
 
-  it('migrations is an empty array', () => {
-    expect(getLlmManifest().migrations).toEqual([]);
+  it('migrations includes the model-hints assisted upgrade entry', () => {
+    const migrations = getLlmManifest().migrations;
+    expect(migrations).toHaveLength(1);
+    const entry = migrations[0];
+    expect(entry.from).toBe('<3.3.0');
+    expect(entry.to).toBe('>=3.3.0');
+    expect(entry.summary).toMatch(/model hints/i);
+    expect(entry.steps.length).toBeGreaterThanOrEqual(3);
+    expect(entry.steps.some((s) => s.includes('story.modelHints'))).toBe(true);
   });
 
   it('skills has one entry per templates/skills/ directory', () => {

@@ -1,27 +1,27 @@
-import { readFile } from 'node:fs/promises';
-import { readFileSync } from 'node:fs';
-import { createRequire } from 'node:module';
-import path from 'node:path';
-import { DOCCRAFT_CONFIG_SCHEMA } from '../utils/config-schema.js';
-import { applyDocsDir, getAvailableSkills } from '../utils/skills.js';
+import { readFile } from "node:fs/promises";
+import { readFileSync } from "node:fs";
+import { createRequire } from "node:module";
+import path from "node:path";
+import { DOCCRAFT_CONFIG_SCHEMA } from "../utils/config-schema.js";
+import { applyDocsDir, getAvailableSkills } from "../utils/skills.js";
 
 const _require = createRequire(import.meta.url);
 
 // Substituted at build time by build.js — never exposed as a literal in dist/.
-const DOCCRAFT_VERSION = '{{DOCCRAFT_VERSION}}';
+const DOCCRAFT_VERSION = "{{DOCCRAFT_VERSION}}";
 
 function getBundledOpenspecVersion(): string {
   try {
-    const openspecMain = _require.resolve('@fission-ai/openspec');
+    const openspecMain = _require.resolve("@fission-ai/openspec");
     let dir = path.dirname(openspecMain);
     while (dir !== path.dirname(dir)) {
-      const candidate = path.join(dir, 'package.json');
+      const candidate = path.join(dir, "package.json");
       try {
-        const pkg = JSON.parse(readFileSync(candidate, 'utf8')) as {
+        const pkg = JSON.parse(readFileSync(candidate, "utf8")) as {
           name?: string;
           version?: string;
         };
-        if (pkg.name === '@fission-ai/openspec' && pkg.version) {
+        if (pkg.name === "@fission-ai/openspec" && pkg.version) {
           return pkg.version;
         }
       } catch {
@@ -32,7 +32,7 @@ function getBundledOpenspecVersion(): string {
   } catch {
     // ignore
   }
-  return 'unknown';
+  return "unknown";
 }
 
 interface SkillEntry {
@@ -48,18 +48,18 @@ async function buildSkillsList(): Promise<SkillEntry[]> {
   const entries: SkillEntry[] = [];
 
   for (const skill of skills) {
-    const raw = await readFile(skill.skillFilePath, 'utf8');
+    const raw = await readFile(skill.skillFilePath, "utf8");
 
-    let purpose = '';
+    let purpose = "";
 
     // Try multiline folded scalar first (description: >-\n  line1\n  line2)
     const multiMatch = raw.match(FRONTMATTER_MULTILINE_DESC_RE);
     if (multiMatch) {
       purpose = multiMatch[1]
-        .split('\n')
-        .map((l) => l.replace(/^\s{2}/, ''))
+        .split("\n")
+        .map((l) => l.replace(/^\s{2}/, ""))
         .filter(Boolean)
-        .join(' ')
+        .join(" ")
         .trim();
     } else {
       const singleMatch = raw.match(FRONTMATTER_DESC_RE);
@@ -68,7 +68,7 @@ async function buildSkillsList(): Promise<SkillEntry[]> {
       }
     }
 
-    entries.push({ name: skill.name, purpose: applyDocsDir(purpose, 'docs') });
+    entries.push({ name: skill.name, purpose: applyDocsDir(purpose, "docs") });
   }
 
   return entries;
@@ -79,7 +79,12 @@ export interface LlmManifest {
   bundledOpenspecVersion: string;
   schema: typeof DOCCRAFT_CONFIG_SCHEMA;
   skills: SkillEntry[];
-  migrations: Array<{ from: string; to: string; summary: string; steps: string[] }>;
+  migrations: Array<{
+    from: string;
+    to: string;
+    summary: string;
+    steps: string[];
+  }>;
 }
 
 export async function runLlm(): Promise<void> {
@@ -90,8 +95,20 @@ export async function runLlm(): Promise<void> {
     bundledOpenspecVersion: getBundledOpenspecVersion(),
     schema: DOCCRAFT_CONFIG_SCHEMA,
     skills,
-    migrations: [],
+    migrations: [
+      {
+        from: `<3.3.0`,
+        to: `>=3.3.0`,
+        summary:
+          "Per-story model hints — add story.modelHints config field and a project-owned registry file.",
+        steps: [
+          'Add `story.modelHints: "docs/reference/model-hints.md"` to doccraft.json (or any path you prefer).',
+          "Create the registry file at that path from the neutral starter (doccraft update will create the file if it does not exist; existing files are preserved).",
+          "Optional: run the `doccraft-config` skill to walk through tailoring the registry to your project's models and labels.",
+        ],
+      },
+    ],
   };
 
-  process.stdout.write(JSON.stringify(manifest) + '\n');
+  process.stdout.write(JSON.stringify(manifest) + "\n");
 }

@@ -1,5 +1,11 @@
 # doccraft
 
+## 3.3.0
+
+### Minor Changes
+
+- Add optional `story.modelHints` in `doccraft.json` — a project-root-relative path to a markdown **model hints registry**. New scaffolds ship `docs/reference/model-hints.md` as a neutral starter and pre-wire the field. When set, the rendered `doccraft-story` skill includes a **Model hints** integration block; when unset, behaviour matches previous releases. Existing projects are guided via a single `doccraft llm` migration entry (`<3.3.0` → `>=3.3.0`, i.e. every stamp below 3.3.0 upgrading into 3.3.0+); `doccraft update` creates the registry file only if it does not already exist.
+
 ## 0.1.9
 
 ### Patch Changes

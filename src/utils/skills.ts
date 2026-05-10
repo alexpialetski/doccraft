@@ -294,6 +294,20 @@ updating a story that affects a product or go-to-market decision:
   \`doccraft-business\` before committing to acceptance criteria.
 `;
 
+/** Canonical body injected into doccraft-story when `story.modelHints` is set. */
+export const MODEL_HINTS_BLOCK_STORY = `
+## Model hints
+
+This project's \`doccraft.json\` declares \`story.modelHints: "<PATH>"\`. Before authoring or editing a story:
+
+1. **Read** the registry at \`<PATH>\`. Treat it as the project's source of truth for which models or tiers fit which kind of work — including when different phases (e.g. spec or OpenSpec work vs implementation vs review) warrant different trade-offs.
+2. **Combine the registry with the story's context** — tags, impact, urgency, body, \`openspec\` — so guidance matches the real workflow. The registry may describe phase-specific choices; reflect that in closing Notes prose.
+3. **Append model guidance as regular markdown at the end of the story's Notes section** — after other Notes content, plain sentences only. The registry informs what to say; express it as normal Notes prose. A final **Models / workflow** subsection at the bottom of Notes is fine when the story is long.
+4. When updating a story, revise that closing Notes guidance when the body, registry, or phase mix changed; keep wording that still applies.
+
+The registry content is **project-defined**, not doccraft-defined. The registry is the contract.
+`;
+
 function getSkillFeature(raw: string): string | undefined {
   const fmMatch = raw.match(/^---\n([\s\S]*?)\n---/);
   if (!fmMatch) return undefined;
@@ -313,6 +327,35 @@ function applyBusinessBlock(raw: string, features: string[], skillName: string):
         ? BUSINESS_BLOCK_STORY
         : '';
   return raw.replace(/\{\{BUSINESS_INTEGRATION_BLOCK\}\}/g, block);
+}
+
+/**
+ * Replaces `{{MODEL_HINTS_INTEGRATION_BLOCK}}` when present. Mirrors
+ * `applyBusinessBlock`: empty string when `modelHintsPath` is absent or blank.
+ */
+export function applyModelHintsBlock(raw: string, modelHintsPath: string | undefined): string {
+  if (!raw.includes('{{MODEL_HINTS_INTEGRATION_BLOCK}}')) return raw;
+  const trimmed = modelHintsPath?.trim();
+  if (!trimmed) {
+    return raw.replace(/\{\{MODEL_HINTS_INTEGRATION_BLOCK\}\}/g, '');
+  }
+  const block = MODEL_HINTS_BLOCK_STORY.replaceAll('<PATH>', trimmed);
+  return raw.replace(/\{\{MODEL_HINTS_INTEGRATION_BLOCK\}\}/g, block);
+}
+
+export async function readStoryModelHintsFromConfig(projectPath: string): Promise<string | undefined> {
+  const configPath = path.join(projectPath, 'doccraft.json');
+  if (!existsSync(configPath)) return undefined;
+  try {
+    const raw = await readFile(configPath, 'utf8');
+    const cfg = JSON.parse(raw) as Record<string, unknown>;
+    const story = cfg['story'];
+    if (!story || typeof story !== 'object') return undefined;
+    const mh = (story as Record<string, unknown>)['modelHints'];
+    return typeof mh === 'string' && mh.trim().length > 0 ? mh.trim() : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 export async function readFeaturesFromConfig(projectPath: string): Promise<string[]> {
@@ -408,6 +451,7 @@ export async function installSkills(
   const available = skills ?? (await getAvailableSkills());
   const effectiveDocsDir = docsDir ?? (await readDocsDirFromConfig(projectPath));
   const enabledFeatures = features ?? (await readFeaturesFromConfig(projectPath));
+  const modelHintsForInstall = await readStoryModelHintsFromConfig(projectPath);
   const installed: InstalledSkill[] = [];
 
   for (const tool of tools) {
@@ -424,7 +468,8 @@ export async function installSkills(
           ? raw.replace('{{DOCCRAFT_CONFIG_SCHEMA}}', SCHEMA_JSON)
           : raw;
       const withBusiness = applyBusinessBlock(withSchema, enabledFeatures, skill.name);
-      const substituted = applyDocsDir(withBusiness, effectiveDocsDir);
+      const withModelHints = applyModelHintsBlock(withBusiness, modelHintsForInstall);
+      const substituted = applyDocsDir(withModelHints, effectiveDocsDir);
       const body = injectManagedHeader(substituted);
       const targetDir = path.join(toolSkillsRoot, skill.name);
       const targetPath = path.join(targetDir, 'SKILL.md');
@@ -522,19 +567,50 @@ async function walkTemplateFiles(root: string): Promise<string[]> {
 export async function scaffoldDocsIfMissing(projectPath: string): Promise<string[]> {
   if (!existsSync(TEMPLATES_DOCS_DIR)) return [];
 
+  const docsDir = await readDocsDirFromConfig(projectPath);
   const relativePaths = await walkTemplateFiles(TEMPLATES_DOCS_DIR);
   const created: string[] = [];
 
   for (const rel of relativePaths) {
-    const targetPath = path.join(projectPath, 'docs', rel);
+    const targetPath = path.join(projectPath, docsDir, rel);
     if (existsSync(targetPath)) continue;
     const body = await readFile(path.join(TEMPLATES_DOCS_DIR, rel), 'utf8');
     await mkdir(path.dirname(targetPath), { recursive: true });
     await writeFile(targetPath, body, 'utf8');
-    created.push(path.posix.join('docs', rel));
+    created.push(path.posix.join(docsDir, rel));
   }
 
   return created;
+}
+
+const BUNDLED_MODEL_HINTS_TEMPLATE = path.join(
+  TEMPLATES_DOCS_DIR,
+  'reference',
+  'model-hints.md'
+);
+
+/**
+ * If `doccraft.json` sets `story.modelHints` to a non-empty path and that file
+ * does not exist yet, copy the bundled neutral starter. Never overwrites an
+ * existing file (project-owned content).
+ */
+export async function ensureModelHintsRegistryFile(projectPath: string): Promise<{
+  created?: string;
+  preserved?: string;
+}> {
+  const relPath = await readStoryModelHintsFromConfig(projectPath);
+  if (!relPath) return {};
+
+  const dest = path.join(projectPath, relPath);
+  if (existsSync(dest)) {
+    return { preserved: relPath };
+  }
+  if (!existsSync(BUNDLED_MODEL_HINTS_TEMPLATE)) return {};
+
+  const body = await readFile(BUNDLED_MODEL_HINTS_TEMPLATE, 'utf8');
+  await mkdir(path.dirname(dest), { recursive: true });
+  await writeFile(dest, body, 'utf8');
+  return { created: relPath };
 }
 
 /**

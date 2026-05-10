@@ -50,9 +50,9 @@ The manifest SHALL contain a `"migrations"` array. Each entry SHALL have `"from"
 - **WHEN** `doccraft llm` output is parsed
 - **THEN** `output.migrations` is an array (may be empty)
 
-#### Scenario: initial manifest ships with empty migrations
-- **WHEN** `doccraft llm` is run on the first release implementing this feature
-- **THEN** `output.migrations` has length 0
+#### Scenario: migrations defaults to sparse entries
+- **WHEN** `doccraft llm` output is parsed
+- **THEN** `output.migrations` is an array (often length 0; may contain one entry when a release declares user-assisted setup steps such as new optional config fields)
 
 #### Scenario: migration entry shape is correct when present
 - **WHEN** `output.migrations` contains entries

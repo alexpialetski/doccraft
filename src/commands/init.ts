@@ -18,6 +18,7 @@ import {
   resolveToolSelection,
   scaffoldDocsIfMissing,
   scaffoldRootConfigIfMissing,
+  ensureModelHintsRegistryFile,
   SUPPORTED_TOOLS,
   writeFeaturesToConfig,
   type SkillTool,
@@ -107,6 +108,12 @@ export async function installDoccraftSkills(
 ): Promise<void> {
   const rootConfigCreated = await scaffoldRootConfigIfMissing(projectPath);
   const scaffolded = await scaffoldDocsIfMissing(projectPath);
+  const modelHintsOutcome = await ensureModelHintsRegistryFile(projectPath);
+  if (modelHintsOutcome.created) {
+    console.log(
+      chalk.dim(`\nCreated model hints registry at ${modelHintsOutcome.created}`)
+    );
+  }
   const allCreated = rootConfigCreated ? ['doccraft.json', ...scaffolded] : scaffolded;
   if (allCreated.length > 0) {
     console.log(chalk.dim(`\nScaffolded ${allCreated.length} file(s): ${allCreated.join(', ')}`));
