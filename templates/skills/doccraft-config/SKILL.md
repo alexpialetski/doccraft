@@ -71,7 +71,6 @@ Recommended sections inside the registry (conventions, not schema-enforced):
 - **Available models** — rows your team fills in for each tier or endpoint you use.
 - **Phases and roles** — optional; how different parts of the work (e.g. OpenSpec vs implementation) map to different models; restate that stories capture this as closing Notes prose.
 - **Decision rules** — optional; how guidance combines with story tags, impact, urgency, `openspec`.
-- **Per-story mapping** — optional table for an authoritative live list.
 
 **Tailoring flow:** when the user invokes this skill and `story.modelHints` is configured, you may offer to walk them through replacing the neutral starter with the project's actual models and phase rules, *only if* the file still matches the bundled starter (heuristic: same byte size or matching header line as `templates/docs/reference/model-hints.md` in the doccraft package). If the file is clearly customised, do not reset it — help in place.
 

@@ -19,12 +19,6 @@ Many stories benefit from **different** models at different times — e.g. a hea
 
 _(Optional.)_ How model choice combines with story context (`impact`, `urgency`, tags, body, `openspec`). Omit until you have a stable convention.
 
-## Per-story mapping
-
-| Story `id` | Model / phase guidance (summary) | Rationale |
-|------------|-----------------------------------|-----------|
-| | | |
-
 ---
 
 Starter template introduced in doccraft OpenSpec change `2026-05-10-story-model-hints`. Future doccraft versions may refresh this file via `doccraft update` when you have not customised it.
