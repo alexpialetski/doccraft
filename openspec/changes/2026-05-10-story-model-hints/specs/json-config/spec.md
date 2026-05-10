@@ -25,3 +25,18 @@ The schema definition for `story.modelHints` SHALL include a non-empty `descript
 - **WHEN** a developer hovers over `story.modelHints` in an IDE that consumes the schema
 - **THEN** the description text appears in the hover tooltip
 - **THEN** the example path appears in autocomplete suggestions
+
+### Requirement: Default scaffold sets story.modelHints
+The `templates/doccraft.json` shipped with the package SHALL include `story.modelHints: "docs/reference/model-hints.md"` so new projects scaffolded via `doccraft init` have the field pre-set.
+
+#### Scenario: Init scaffolds doccraft.json with modelHints set
+- **WHEN** `doccraft init` runs against a project with no existing `doccraft.json`
+- **THEN** the written `doccraft.json` contains `story.modelHints: "docs/reference/model-hints.md"`
+
+#### Scenario: Init copies the registry template into place
+- **WHEN** `doccraft init` runs against a project with no existing `docs/reference/model-hints.md`
+- **THEN** a file is created at that path from the bundled `templates/docs/reference/model-hints.md`
+
+#### Scenario: Init preserves an existing registry file
+- **WHEN** `doccraft init` runs against a project that already has a file at the path referenced by `story.modelHints`
+- **THEN** the existing file is left unchanged
