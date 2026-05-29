@@ -68,6 +68,19 @@ describe('config-schema', () => {
     const story = props.story as { properties?: Record<string, unknown> };
     expect(story?.properties?.modelHints).toBeUndefined();
   });
+
+  it('declares packages array (ADR 014)', () => {
+    const props = DOCCRAFT_CONFIG_SCHEMA.properties as Record<string, unknown>;
+    expect(props.packages).toBeTruthy();
+  });
+
+  it('declares story.status, story.urgency, story.impact vocab enums', () => {
+    const props = DOCCRAFT_CONFIG_SCHEMA.properties as Record<string, unknown>;
+    const story = props.story as { properties: Record<string, unknown> };
+    expect(story.properties.status).toBeTruthy();
+    expect(story.properties.urgency).toBeTruthy();
+    expect(story.properties.impact).toBeTruthy();
+  });
 });
 
 describe('getAvailableSkills', () => {
@@ -474,6 +487,8 @@ describe('scaffoldDocsIfMissing', () => {
     expect(created).toContain('docs/queue.md');
     expect(created).toContain('docs/stories/README.md');
     expect(created).toContain('docs/adr/README.md');
+    expect(created).toContain('docs/reference/README.md');
+    expect(created).toContain('docs/research/README.md');
     expect(existsSync(path.join(project, 'docs/backlog.md'))).toBe(true);
   });
 

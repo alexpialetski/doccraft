@@ -34,6 +34,15 @@ Relevant keys:
   `docs`. Stories live at `{docsDir}/stories/`.
 - `story.areas`, `story.slices`, `story.themes` — tag vocabulary lists
   (replace the default `area:` / `slice:` / `theme:` values).
+- `story.status` — allowed values for the `status:` field. Default:
+  `[todo, in_progress, done]`. Extend if your project uses additional
+  states (e.g. `blocked`, `abandoned`).
+- `story.urgency` — allowed values for the `urgency:` field. Default:
+  `[now, soon, later]`. Some projects use tier names (`p0..p4`) directly
+  here, or mix both.
+- `story.impact` — allowed values for the `impact:` field. Default:
+  `[H, M, L]`. Override for projects that prefer `[high, medium, low]`
+  or another taxonomy.
 - `story.id.tiers` — filename tier prefixes like `p0`…`p4`. Empty list
   `[]` means the project does not use tier prefixes.
 - `story.id.pattern` — regex accepting valid story `id:` values in
@@ -89,9 +98,9 @@ Use valid YAML between `---` delimiters at the top of the file.
 |-------|----------|----------------|
 | `id` | yes | Stable, unique id across stories. `P0.3` when aligned to `{{DOCS_DIR}}/backlog.md`, or a slug like `story-2026-001`. |
 | `title` | yes | Short human-readable title. |
-| `status` | yes | `todo` \| `in_progress` \| `done` — **manual** updates only. |
-| `impact` | yes | `H` (high) \| `M` \| `L` — product or engineering leverage. |
-| `urgency` | yes | `now` \| `soon` \| `later` — time sensitivity or deadline pressure. |
+| `status` | yes | One of the values in `story.status` config (default: `todo` \| `in_progress` \| `done`). **Manual** updates only. |
+| `impact` | yes | One of the values in `story.impact` config (default: `H` \| `M` \| `L`). |
+| `urgency` | yes | One of the values in `story.urgency` config (default: `now` \| `soon` \| `later`). |
 | `tags` | yes | YAML list of **prefixed** strings (`area:`, `slice:`, `theme:`) from the vocabulary below. If nothing fits and the label will recur, extend this skill in the same change (see **Extending the vocabulary**). |
 | `openspec` | yes | `not-needed` \| `recommended` \| `required` — whether OpenSpec-style spec work fits before coding. |
 | `updated` | recommended | ISO date `YYYY-MM-DD` when the story last changed meaningfully. |
@@ -100,10 +109,10 @@ Use valid YAML between `---` delimiters at the top of the file.
 | `adr_refs` | optional | List of ADR filenames this story implements or contradicts (e.g. `001-foo.md`). |
 | `openspec_change` | optional | Path or name of the OpenSpec change folder when one exists. |
 
-> Do not invent new values for `status`, `impact`, `urgency`, or `openspec`
-> without updating this skill in the same change — the enum tables above are
-> the single source of truth. One-off nuance belongs in the body, not as a new
-> enum value.
+> Do not invent new values for `status`, `impact`, or `urgency` without first
+> adding them to the matching `story.*` enum in `doccraft.json` — those are
+> the single source of truth. For `openspec`, update this skill in the same
+> change. One-off nuance belongs in the body, not as a new enum value.
 
 <!-- doccraft:inject point=story.frontmatter.fields -->
 <!-- /doccraft:inject -->
@@ -180,6 +189,8 @@ openspec: recommended
 updated: 2026-04-18
 roadmap_ref: P0.3
 depends_on: []
+adr_refs:
+  - 003-payment-gateway-choice.md
 ---
 
 ## Problem / outcome

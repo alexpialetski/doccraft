@@ -25,6 +25,16 @@ remain in the backlog for later consideration.
 
 **Recently shipped:**
 
+- Template refresh + vocab enums (4.2.0). Adds configurable
+  `story.status`, `story.urgency`, `story.impact` enums to the
+  schema — projects extend the allowed values in `doccraft.json` rather
+  than hand-editing skill bodies. Rewrites the bundled `docs/README.md`,
+  `docs/backlog.md`, and `docs/queue.md` templates with the patterns
+  audio-stage evolved (ship checklist, Planned/Shipped split per tier,
+  parallel-ok queue subsection, Cursor integration table). Seeds new
+  `docs/reference/` and `docs/research/` scaffolds with README
+  placeholders. `doccraft-story` template body updated to reference the
+  new vocab config keys and show `adr_refs:` in its example.
 - Monorepo support (ADR 014). `packages: [{ path }]` in doccraft.json
   opts each declared package into its own `<docsDir>/` tree (stories,
   ADRs, queue, backlog) scaffolded from the bundled `templates/docs/`.
