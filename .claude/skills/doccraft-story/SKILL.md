@@ -77,8 +77,9 @@ Use valid YAML between `---` delimiters at the top of the file.
 
 > Do not invent new values for `status`, `impact`, `urgency`, or `openspec`
 > without updating this skill in the same change — the enum tables above are
-> the single source of truth. One-off nuance belongs in the body, not as a
-> new enum value.
+> the single source of truth. One-off nuance belongs in the body, not as a new
+> enum value.
+
 
 ### `openspec` guidance
 
@@ -133,6 +134,7 @@ After frontmatter, use markdown sections such as:
 2. **Acceptance criteria** — bullet list, testable where possible.
 3. **Notes** — links to code (`src/...`), related ADRs, PRs.
 
+
 ## Example
 
 ````markdown
@@ -176,3 +178,5 @@ OpenSpec recommended because: touches schema + payment service + integration tes
 - After creating a story or changing `depends_on`, invoke
   `doccraft-queue-audit` in the same turn so the working queue stays
   consistent with the dependency graph.
+
+

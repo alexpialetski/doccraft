@@ -117,16 +117,6 @@
             ]
           ]
         },
-        "modelHints": {
-          "title": "Model hints registry path",
-          "description": "Optional path to a project-owned markdown file (relative to the project root) describing which models suit which work and how to label recommendations. When set, the rendered doccraft-story skill includes an integration block that points agents at this file before authoring stories. doccraft does not validate the file contents — the registry is entirely project-defined.",
-          "type": "string",
-          "examples": [
-            "docs/reference/model-hints.md",
-            "planning/models.md",
-            ".doccraft/model-hints.md"
-          ]
-        },
         "id": {
           "title": "Story identifier format",
           "description": "Controls which `id:` values doccraft-story accepts. Validated on creation and edit.",
@@ -266,28 +256,33 @@
         }
       }
     },
-    "features": {
-      "title": "Optional feature modules",
-      "description": "Opt-in feature modules to enable. Each entry installs additional skills and activates conditional integration blocks in core skills. Currently supported: \"business\" (startup advisor + docs/business/ integration), \"design\" (designer-skills via npx during init/update). Absent or empty means no optional features.",
+    "extensions": {
+      "title": "Doccraft extensions",
+      "description": "Ordered array of project-local extension directories. Each entry declares a path (relative to the project root) to a directory containing an extension.yaml manifest. Extensions bake fragments into skill bodies at marker points and may scaffold supporting docs/ folders. Declaration order is significant — fragments concatenate in this order. See ADR 013 in the doccraft repo for the full mechanism.",
       "type": "array",
       "items": {
-        "type": "string",
-        "enum": [
-          "business",
-          "design"
+        "type": "object",
+        "properties": {
+          "path": {
+            "title": "Extension directory path",
+            "description": "Path to a directory containing extension.yaml, relative to the project root.",
+            "type": "string",
+            "examples": [
+              "./docs/.doccraft/extensions/business",
+              "./docs/.doccraft/extensions/model-hints"
+            ]
+          }
+        },
+        "required": [
+          "path"
         ]
       },
       "examples": [
         [],
         [
-          "business"
-        ],
-        [
-          "design"
-        ],
-        [
-          "business",
-          "design"
+          {
+            "path": "./docs/.doccraft/extensions/business"
+          }
         ]
       ]
     },

@@ -25,6 +25,13 @@ remain in the backlog for later consideration.
 
 **Recently shipped:**
 
+- Extension framework + monorepo support (ADRs 013, 014). Bake-time
+  injection markers (`<!-- doccraft:inject point=... -->`) and scaffold
+  copying replace the bespoke `features` array, `feature:` frontmatter
+  gate, business/model-hints integration blocks, and the designer-skills
+  subprocess. Audio-stage carries business/design/model-hints as
+  extensions in its own repo. Breaking change in
+  [openspec/changes/extension-framework](../openspec/changes/extension-framework).
 - P1.5 — JSON config (`doccraft.json` with `$schema` + `version` stamp),
   `doccraft llm` manifest command, `doccraft-config` skill (analyse + edit
   modes), `doccraft-update` skill (silent + assisted paths). See

@@ -50,12 +50,11 @@ describe('doccraft CLI', () => {
     expect(output).toContain('llm');
   });
 
-  it('init --help documents design in --features option', () => {
+  it('init --help no longer advertises --features (ADR 013 removed feature flags)', () => {
     const output = execFileSync(process.execPath, [binPath, 'init', '--help'], {
       encoding: 'utf8',
     });
-    expect(output).toContain('--features');
-    expect(output).toContain('design');
+    expect(output).not.toContain('--features');
   });
 });
 
@@ -109,15 +108,9 @@ describe('doccraft llm', () => {
     expect(getLlmManifest().bundledOpenspecVersion).toBeTruthy();
   });
 
-  it('migrations includes the model-hints assisted upgrade entry', () => {
+  it('migrations is empty after ADR 013 removed model-hints from core', () => {
     const migrations = getLlmManifest().migrations;
-    expect(migrations).toHaveLength(1);
-    const entry = migrations[0];
-    expect(entry.from).toBe('<3.3.0');
-    expect(entry.to).toBe('>=3.3.0');
-    expect(entry.summary).toMatch(/model hints/i);
-    expect(entry.steps.length).toBeGreaterThanOrEqual(3);
-    expect(entry.steps.some((s) => s.includes('story.modelHints'))).toBe(true);
+    expect(migrations).toEqual([]);
   });
 
   it('skills has one entry per templates/skills/ directory', () => {

@@ -1,6 +1,6 @@
 # ADR 010 — Business module as an opt-in feature
 
-**Status:** Accepted  
+**Status:** Superseded by [013-extension-framework.md](013-extension-framework.md)
 **Date:** 2026-04-24
 
 ---

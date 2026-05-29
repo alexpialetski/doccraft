@@ -58,6 +58,7 @@ Positive and negative effects, follow-up work, coupling introduced.
 
 Optional but **strongly encouraged** when multiple options existed. Brief bullets: what was considered and why it was not chosen.
 
+
 ## Status and supersession
 
 Near the top (after the title) or in optional YAML frontmatter, record status:
@@ -89,6 +90,7 @@ superseded_by: null
 ```
 
 Plain markdown with a **Status:** line is equally acceptable.
+
 
 ## Linking to stories
 
@@ -146,3 +148,5 @@ This kind of ADR is valuable even though nothing ships from it — the next time
 - Link to roadmap ids (`P2.1`) or story ids when it clarifies scope.
 - If your project uses conventional commits, `docs:` scope is fine for
   ADR-only commits (e.g. `docs(adr): add 008 managed postgres`).
+
+

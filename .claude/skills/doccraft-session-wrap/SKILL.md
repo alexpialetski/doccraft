@@ -62,6 +62,7 @@ Authoritative overview, if the project has one: `docs/README.md`.
 | **Story** | `docs/stories/<slug>.md` | **Trackable scope** with acceptance criteria and optional `depends_on`. Follow `doccraft-story` if installed. |
 | **Backlog / queue** | `docs/backlog.md`, `docs/queue.md` | P-tier rows, status column, ordered "pick next" — not every chat. If the thread defined new **dependencies**, point the user at `doccraft-queue-audit` (Agent mode applies mechanical fixes). |
 
+
 ## Gate checklist (run mentally before proposing)
 
 Answer each **only from the visible thread** (and optional repo files the user
@@ -111,3 +112,5 @@ If **none** of the above apply → go to **§ Exit**.
 If no row in the proposals table applies, respond with **one or two sentences**
 only, e.g. *"No durable decisions or synthesis in this thread; nothing to add
 to `docs/`."* — then **stop** (no filler table, no speculative ADRs).
+
+

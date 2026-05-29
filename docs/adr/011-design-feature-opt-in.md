@@ -1,6 +1,6 @@
 # ADR 011 — Design feature as an opt-in module
 
-**Status:** Accepted  
+**Status:** Superseded by [013-extension-framework.md](013-extension-framework.md)
 **Date:** 2026-05-01
 
 ---

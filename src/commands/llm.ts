@@ -95,19 +95,7 @@ export async function runLlm(): Promise<void> {
     bundledOpenspecVersion: getBundledOpenspecVersion(),
     schema: DOCCRAFT_CONFIG_SCHEMA,
     skills,
-    migrations: [
-      {
-        from: `<3.3.0`,
-        to: `>=3.3.0`,
-        summary:
-          "Per-story model hints — add story.modelHints config field and a project-owned registry file.",
-        steps: [
-          'Add `story.modelHints: "docs/reference/model-hints.md"` to doccraft.json (or any path you prefer).',
-          "Create the registry file at that path from the neutral starter (doccraft update will create the file if it does not exist; existing files are preserved).",
-          "Optional: run the `doccraft-config` skill to walk through tailoring the registry to your project's models and labels.",
-        ],
-      },
-    ],
+    migrations: [],
   };
 
   process.stdout.write(JSON.stringify(manifest) + "\n");

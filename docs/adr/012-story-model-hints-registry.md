@@ -1,6 +1,6 @@
 # ADR 012 — Story model hints via optional `story.modelHints` path
 
-**Status:** Accepted  
+**Status:** Superseded by [013-extension-framework.md](013-extension-framework.md)
 **Date:** 2026-05-10
 
 ---
