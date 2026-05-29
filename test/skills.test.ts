@@ -11,9 +11,7 @@ import path from 'node:path';
 import { describe, expect, it, afterEach } from 'vitest';
 import {
   applyDocsDir,
-  applyModelHintsBlock,
   bumpConfigVersion,
-  ensureModelHintsRegistryFile,
   findStaleCursorSkills,
   formatToolsArg,
   getAvailableRules,
@@ -26,7 +24,6 @@ import {
   parseToolsArg,
   detectInstalledTools,
   readDocsDirFromConfig,
-  readStoryModelHintsFromConfig,
   resolveToolSelection,
   scaffoldDocsIfMissing,
   scaffoldRootConfigIfMissing,
@@ -50,91 +47,6 @@ afterEach(() => {
   }
 });
 
-describe('readStoryModelHintsFromConfig', () => {
-  it('returns undefined when doccraft.json is missing', async () => {
-    const project = makeTempProject();
-    expect(await readStoryModelHintsFromConfig(project)).toBeUndefined();
-  });
-
-  it('returns undefined when story.modelHints is absent', async () => {
-    const project = makeTempProject();
-    writeFileSync(
-      path.join(project, 'doccraft.json'),
-      JSON.stringify({ story: { areas: [] } }),
-      'utf8'
-    );
-    expect(await readStoryModelHintsFromConfig(project)).toBeUndefined();
-  });
-
-  it('returns undefined for empty or whitespace-only modelHints', async () => {
-    const project = makeTempProject();
-    writeFileSync(
-      path.join(project, 'doccraft.json'),
-      JSON.stringify({ story: { modelHints: '  ' } }),
-      'utf8'
-    );
-    expect(await readStoryModelHintsFromConfig(project)).toBeUndefined();
-  });
-
-  it('round-trips a non-empty path', async () => {
-    const project = makeTempProject();
-    const pathVal = 'docs/reference/model-hints.md';
-    writeFileSync(
-      path.join(project, 'doccraft.json'),
-      JSON.stringify({ story: { modelHints: pathVal } }),
-      'utf8'
-    );
-    expect(await readStoryModelHintsFromConfig(project)).toBe(pathVal);
-  });
-});
-
-describe('applyModelHintsBlock', () => {
-  it('strips the placeholder when modelHints path is absent', () => {
-    const raw = 'Hello{{MODEL_HINTS_INTEGRATION_BLOCK}}Tail';
-    expect(applyModelHintsBlock(raw, undefined)).toBe('HelloTail');
-  });
-
-  it('injects the block with the configured path', () => {
-    const raw = '{{MODEL_HINTS_INTEGRATION_BLOCK}}';
-    const out = applyModelHintsBlock(raw, 'planning/hints.md');
-    expect(out).toContain('story.modelHints: "planning/hints.md"');
-    expect(out).toContain('## Model hints');
-    expect(out).not.toContain('{{MODEL_HINTS_INTEGRATION_BLOCK}}');
-  });
-});
-
-describe('ensureModelHintsRegistryFile', () => {
-  it('creates the file from the bundled template when missing', async () => {
-    const project = makeTempProject();
-    writeFileSync(
-      path.join(project, 'doccraft.json'),
-      JSON.stringify({ story: { modelHints: 'docs/custom-hints.md' } }),
-      'utf8'
-    );
-    const result = await ensureModelHintsRegistryFile(project);
-    expect(result.created).toBe('docs/custom-hints.md');
-    const abs = path.join(project, 'docs/custom-hints.md');
-    expect(existsSync(abs)).toBe(true);
-    expect(readFileSync(abs, 'utf8')).toContain('Model hints registry');
-  });
-
-  it('does not overwrite an existing registry file', async () => {
-    const project = makeTempProject();
-    mkdirSync(path.join(project, 'docs', 'reference'), { recursive: true });
-    const target = path.join(project, 'docs/reference/model-hints.md');
-    writeFileSync(target, '# Custom registry\n', 'utf8');
-    writeFileSync(
-      path.join(project, 'doccraft.json'),
-      JSON.stringify({ story: { modelHints: 'docs/reference/model-hints.md' } }),
-      'utf8'
-    );
-    const result = await ensureModelHintsRegistryFile(project);
-    expect(result.preserved).toBe('docs/reference/model-hints.md');
-    expect(result.created).toBeUndefined();
-    expect(readFileSync(target, 'utf8')).toBe('# Custom registry\n');
-  });
-});
-
 describe('config-schema', () => {
   it('every property in the schema has a description', () => {
     function checkDescriptions(obj: Record<string, unknown>, path: string): void {
@@ -148,10 +60,18 @@ describe('config-schema', () => {
     }
     checkDescriptions(DOCCRAFT_CONFIG_SCHEMA as unknown as Record<string, unknown>, 'root');
   });
+
+  it('declares extensions but not features or story.modelHints (ADR 013)', () => {
+    const props = DOCCRAFT_CONFIG_SCHEMA.properties as Record<string, unknown>;
+    expect(props.extensions).toBeTruthy();
+    expect(props.features).toBeUndefined();
+    const story = props.story as { properties?: Record<string, unknown> };
+    expect(story?.properties?.modelHints).toBeUndefined();
+  });
 });
 
 describe('getAvailableSkills', () => {
-  it('returns all six bundled skill templates', async () => {
+  it('returns the six bundled skill templates (no doccraft-business)', async () => {
     const skills = await getAvailableSkills();
     const names = skills.map((s) => s.name);
     expect(names).toContain('doccraft-story');
@@ -160,6 +80,7 @@ describe('getAvailableSkills', () => {
     expect(names).toContain('doccraft-queue-audit');
     expect(names).toContain('doccraft-config');
     expect(names).toContain('doccraft-update');
+    expect(names).not.toContain('doccraft-business');
   });
 
   it('returns skills sorted by name for deterministic output', async () => {
@@ -314,26 +235,12 @@ describe('detectInstalledTools', () => {
 });
 
 describe('installDoccraftSkills (ADR 007 default layout)', () => {
-  it('scaffolds doccraft.json with story.modelHints and creates the registry file', async () => {
-    const project = makeTempProject();
-    await installDoccraftSkills(project, 'claude');
-
-    const cfg = JSON.parse(readFileSync(path.join(project, 'doccraft.json'), 'utf8')) as {
-      story?: { modelHints?: string };
-    };
-    expect(cfg.story?.modelHints).toBe('docs/reference/model-hints.md');
-    const hintsPath = path.join(project, 'docs/reference/model-hints.md');
-    expect(existsSync(hintsPath)).toBe(true);
-    expect(readFileSync(hintsPath, 'utf8')).toContain('Model hints registry');
-  });
-
   it('writes skills only to .claude/skills/ even when --tools cursor', async () => {
     const project = makeTempProject();
     await installDoccraftSkills(project, 'cursor');
 
     expect(existsSync(path.join(project, '.claude/skills/doccraft-story/SKILL.md'))).toBe(true);
     expect(existsSync(path.join(project, '.cursor/skills'))).toBe(false);
-    // Rules still land at .cursor/rules/ because Cursor is in the selection.
     expect(existsSync(path.join(project, '.cursor/rules/planning-stories.mdc'))).toBe(true);
   });
 
@@ -406,7 +313,6 @@ describe('installSkills', () => {
     );
     expect(content).toContain('Managed by **doccraft**');
     expect(content).toContain('doccraft.json');
-    // Header must appear after frontmatter closes and before the body title.
     const fmEnd = content.indexOf('\n---\n', 4) + '\n---\n'.length;
     const headerIdx = content.indexOf('Managed by **doccraft**');
     const titleIdx = content.indexOf('# doccraft —');
@@ -438,40 +344,19 @@ describe('installSkills', () => {
       'utf8'
     );
     expect(content).not.toContain('{{DOCCRAFT_CONFIG_SCHEMA}}');
-    // Installed skill contains JSON Schema content (has the $schema meta key)
     expect(content).toContain('"$schema"');
-    expect(content).toContain('## Model hints registry');
-    expect(content).toContain('Tailoring flow:');
+    expect(content).toContain('## Extensions');
   });
 
-  it('includes model hints integration when story.modelHints is set', async () => {
+  it('strips inject markers when no extensions target them', async () => {
     const project = makeTempProject();
-    writeFileSync(
-      path.join(project, 'doccraft.json'),
-      JSON.stringify({
-        story: { modelHints: 'docs/reference/model-hints.md' },
-      }),
-      'utf8'
-    );
     await installSkills(project, [SUPPORTED_TOOLS[0]]);
     const content = readFileSync(
       path.join(project, '.claude/skills/doccraft-story/SKILL.md'),
       'utf8'
     );
-    expect(content).toContain('## Model hints');
-    expect(content).toContain('docs/reference/model-hints.md');
-    expect(content).not.toContain('{{MODEL_HINTS_INTEGRATION_BLOCK}}');
-  });
-
-  it('omits model hints section when story.modelHints is unset', async () => {
-    const project = makeTempProject();
-    writeFileSync(path.join(project, 'doccraft.json'), JSON.stringify({ docsDir: 'docs' }), 'utf8');
-    await installSkills(project, [SUPPORTED_TOOLS[0]]);
-    const content = readFileSync(
-      path.join(project, '.claude/skills/doccraft-story/SKILL.md'),
-      'utf8'
-    );
-    expect(content).not.toContain('## Model hints');
+    expect(content).not.toContain('doccraft:inject');
+    expect(content).not.toContain('{{BUSINESS_INTEGRATION_BLOCK}}');
     expect(content).not.toContain('{{MODEL_HINTS_INTEGRATION_BLOCK}}');
   });
 });
@@ -581,7 +466,7 @@ describe('applyDocsDir', () => {
 });
 
 describe('scaffoldDocsIfMissing', () => {
-  it('seeds every bundled docs file on first run', async () => {
+  it('seeds the bundled docs files on first run', async () => {
     const project = makeTempProject();
     const created = await scaffoldDocsIfMissing(project);
     expect(created).toContain('docs/README.md');
@@ -589,7 +474,6 @@ describe('scaffoldDocsIfMissing', () => {
     expect(created).toContain('docs/queue.md');
     expect(created).toContain('docs/stories/README.md');
     expect(created).toContain('docs/adr/README.md');
-    expect(created).toContain('docs/reference/model-hints.md');
     expect(existsSync(path.join(project, 'docs/backlog.md'))).toBe(true);
   });
 
@@ -625,7 +509,6 @@ describe('scaffoldDocsIfMissing', () => {
     );
     const created = await scaffoldDocsIfMissing(project);
     expect(created).toContain('planning/README.md');
-    expect(created).toContain('planning/reference/model-hints.md');
     expect(existsSync(path.join(project, 'planning/queue.md'))).toBe(true);
   });
 });
@@ -691,7 +574,6 @@ describe('bumpConfigVersion', () => {
     expect(parsed.version).toBe('0.2.0');
     expect(parsed.$schema).toContain('0.2.0');
     expect(parsed.$schema).not.toContain('0.1.0');
-    // Other fields preserved
     expect(parsed.docsDir).toBe('docs');
   });
 

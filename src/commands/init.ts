@@ -1,7 +1,6 @@
 import path from 'node:path';
 import chalk from 'chalk';
 import ora from 'ora';
-import { runDesignerSkillsInstall } from '../utils/designer-skills.js';
 import { runOpenspec } from '../utils/openspec.js';
 import {
   detectInstalledTools,
@@ -14,22 +13,19 @@ import {
   installSkills,
   parseToolsArg,
   readDocsDirFromConfig,
-  readFeaturesFromConfig,
   resolveToolSelection,
   scaffoldDocsIfMissing,
   scaffoldRootConfigIfMissing,
-  ensureModelHintsRegistryFile,
   SUPPORTED_TOOLS,
-  writeFeaturesToConfig,
   type SkillTool,
 } from '../utils/skills.js';
+import { loadExtensions, scaffoldExtensions } from '../utils/extensions.js';
 
 export interface InitOptions {
   tools?: string;
   force?: boolean;
   profile?: string;
   skipOpenspec?: boolean;
-  features?: string;
 }
 
 export async function runInit(targetPath: string, options: InitOptions): Promise<void> {
@@ -39,14 +35,8 @@ export async function runInit(targetPath: string, options: InitOptions): Promise
   console.log(chalk.dim(`Target: ${resolvedPath}\n`));
 
   const toolsArg = await resolveToolSelection(options.tools);
-  const features = options.features
-    ? options.features.split(',').map((s) => s.trim()).filter(Boolean)
-    : undefined;
 
   console.log(chalk.dim(`Tools: ${formatToolsArg(toolsArg)}`));
-  if (features && features.length > 0) {
-    console.log(chalk.dim(`Features: ${features.join(', ')}`));
-  }
   printCursorVersionNoteIfNeeded(toolsArg);
   console.log('');
 
@@ -63,7 +53,7 @@ export async function runInit(targetPath: string, options: InitOptions): Promise
     console.log(chalk.dim('Skipping openspec init (--skip-openspec)'));
   }
 
-  await installDoccraftSkills(resolvedPath, toolsArg, features);
+  await installDoccraftSkills(resolvedPath, toolsArg);
 
   console.log(chalk.green('\nDone.'));
 }
@@ -81,56 +71,39 @@ function printCursorVersionNoteIfNeeded(toolsArg: string): void {
 }
 
 /**
- * Shared install helper used by both `init` and `update`. Four phases:
+ * Shared install helper used by both `init` and `update`. Phases:
  *
- *   1. **Scaffold config + docs** — write `doccraft.yaml` at project root
- *      and seed `docs/README.md`, `docs/backlog.md`, `docs/queue.md`, and
- *      the `stories/` + `adr/` README indexes, skipping existing files.
- *   2. **Install skills** — every `SKILL.md` lands at `.claude/skills/`
- *      regardless of tool selection (ADR 007). Claude Code reads it
- *      natively; Cursor 2.4+ auto-discovers it. `.cursor/skills/` is
- *      never written.
- *   3. **Install rules** — Cursor-style `.mdc` stubs into `.cursor/rules/`
- *      whenever Cursor is in the tool list. Separate primitive (ADR 003).
- *   4. **Stale-cursor advisory** — if doccraft-owned dirs exist under
- *      `.cursor/skills/` (from a pre-ADR-007 install), print a copy-
- *      pasteable cleanup command. Non-destructive.
- *
- * When `doccraft.json` `features` includes `design` (including after
- * `doccraft init --features design`), **designer-skills** are installed via
- * `npx` before the early return for `--tools none`. `doccraft update` replays
- * the same step whenever `design` remains in config.
+ *   1. **Scaffold config + docs** — write `doccraft.json` at project root
+ *      and seed the bundled `docs/` skeleton, skipping existing files.
+ *   2. **Load extensions** — parse `doccraft.json.extensions[]` and
+ *      validate every declared manifest. Hard-errors on malformed entries.
+ *   3. **Install skills** — every `SKILL.md` lands at `.claude/skills/`
+ *      (ADR 007). Extension fragments are baked into skill bodies at
+ *      `<!-- doccraft:inject -->` markers in declaration order.
+ *   4. **Install rules** — Cursor-style `.mdc` stubs into `.cursor/rules/`
+ *      whenever Cursor is in the tool list (ADR 003).
+ *   5. **Scaffold extension content** — copy each extension's declared
+ *      `scaffold[]` source trees into the project, skipping existing files.
+ *   6. **Stale-cursor advisory** — non-destructive cleanup hint when
+ *      doccraft-owned dirs linger under `.cursor/skills/` from old installs.
  */
 export async function installDoccraftSkills(
   projectPath: string,
-  toolsArg: string | undefined,
-  features?: string[]
+  toolsArg: string | undefined
 ): Promise<void> {
   const rootConfigCreated = await scaffoldRootConfigIfMissing(projectPath);
   const scaffolded = await scaffoldDocsIfMissing(projectPath);
-  const modelHintsOutcome = await ensureModelHintsRegistryFile(projectPath);
-  if (modelHintsOutcome.created) {
-    console.log(
-      chalk.dim(`\nCreated model hints registry at ${modelHintsOutcome.created}`)
-    );
-  }
   const allCreated = rootConfigCreated ? ['doccraft.json', ...scaffolded] : scaffolded;
   if (allCreated.length > 0) {
     console.log(chalk.dim(`\nScaffolded ${allCreated.length} file(s): ${allCreated.join(', ')}`));
   }
 
-  // If features were passed explicitly, persist them to config so future
-  // `doccraft update` runs see the same selection without a flag.
-  if (features && features.length > 0) {
-    await writeFeaturesToConfig(projectPath, features);
-  }
-
   const docsDir = await readDocsDirFromConfig(projectPath);
-  const enabledFeatures = features ?? (await readFeaturesFromConfig(projectPath));
-
-  if (enabledFeatures.includes('design')) {
-    console.log(chalk.dim('\nInstalling designer-skills...'));
-    await runDesignerSkillsInstall(projectPath);
+  const extensions = await loadExtensions(projectPath);
+  if (extensions.length > 0) {
+    console.log(
+      chalk.dim(`\nLoaded ${extensions.length} extension(s): ${extensions.map((e) => e.name).join(', ')}`)
+    );
   }
 
   const skills = await getAvailableSkills();
@@ -160,7 +133,7 @@ export async function installDoccraftSkills(
   ).start();
 
   try {
-    await installSkills(projectPath, [canonicalSkillsTool], skills, docsDir, enabledFeatures);
+    await installSkills(projectPath, [canonicalSkillsTool], skills, docsDir, extensions);
     const installedRules = await installRules(projectPath, tools, rules, docsDir);
 
     const skillsSummary = `${skills.length} skill(s) into ${canonicalSkillsTool.skillsDir}`;
@@ -177,6 +150,15 @@ export async function installDoccraftSkills(
   } catch (error) {
     spinner.fail(`Install failed: ${(error as Error).message}`);
     throw error;
+  }
+
+  if (extensions.length > 0) {
+    const created = await scaffoldExtensions(projectPath, extensions);
+    if (created.length > 0) {
+      console.log(
+        chalk.dim(`\nScaffolded ${created.length} extension file(s): ${created.join(', ')}`)
+      );
+    }
   }
 
   const stale = await findStaleCursorSkills(projectPath);

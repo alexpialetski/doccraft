@@ -170,6 +170,7 @@ the fields that matter are:
 - `roadmap_ref` — ties the story to its `docs/backlog.md` row for the
   backlog-drift check.
 
+
 ## Graph checks
 
 1. **Build directed edges.** For each story `S` and each `d` in
@@ -297,6 +298,7 @@ End with a short **Problems** list when any id is missing, cyclic, or
 blocked.
 
 ---
+
 
 ## Optional follow-up template
 

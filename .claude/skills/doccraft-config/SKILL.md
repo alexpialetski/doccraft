@@ -287,6 +287,36 @@ validation in Edit mode instead of calling any CLI.
         }
       }
     },
+    "extensions": {
+      "title": "Doccraft extensions",
+      "description": "Ordered array of project-local extension directories. Each entry declares a path (relative to the project root) to a directory containing an extension.yaml manifest. Extensions bake fragments into skill bodies at marker points and may scaffold supporting docs/ folders. Declaration order is significant — fragments concatenate in this order. See ADR 013 in the doccraft repo for the full mechanism.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "title": "Extension directory path",
+            "description": "Path to a directory containing extension.yaml, relative to the project root.",
+            "type": "string",
+            "examples": [
+              "./docs/.doccraft/extensions/business",
+              "./docs/.doccraft/extensions/model-hints"
+            ]
+          }
+        },
+        "required": [
+          "path"
+        ]
+      },
+      "examples": [
+        [],
+        [
+          {
+            "path": "./docs/.doccraft/extensions/business"
+          }
+        ]
+      ]
+    },
     "sessionWrap": {
       "title": "Session wrap configuration",
       "description": "Controls which artifact categories doccraft-session-wrap considers in scope. Disabling a category prevents the skill from proposing that folder tree.",
@@ -363,6 +393,28 @@ validation in Edit mode instead of calling any CLI.
    all other bytes (key order, whitespace, comments are not present in JSON
    but formatting should be preserved).
 5. Write `doccraft.json` and confirm what changed.
+
+## Extensions
+
+When `doccraft.json` declares an `extensions: [...]` array, each entry points
+at a project-local directory containing an `extension.yaml` manifest. At
+`doccraft update`, doccraft bakes fragments declared by those manifests into
+skill bodies at named injection points and scaffolds any declared folders.
+The extension framework is the supported way to add project-specific
+guidance (additional frontmatter fields, body sections, instructions) to
+the four core skills (`doccraft-story`, `doccraft-adr`,
+`doccraft-queue-audit`, `doccraft-session-wrap`) without forking doccraft.
+
+When editing the `extensions` array:
+
+- **Order is significant.** Fragments concatenate in declaration order at
+  each injection point — surface that to the user when adding a new entry.
+- **Each `path` must be a directory** relative to the project root, and
+  the directory must already exist (or be about to be created in the same
+  change). doccraft does not scaffold extension directories; the user
+  authors them.
+- **Validation runs at `doccraft update`**, not at config write time —
+  malformed manifests surface on the next update.
 
 ## Constraints
 

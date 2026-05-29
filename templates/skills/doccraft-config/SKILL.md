@@ -62,19 +62,27 @@ validation in Edit mode instead of calling any CLI.
    but formatting should be preserved).
 5. Write `doccraft.json` and confirm what changed.
 
-## Model hints registry
+## Extensions
 
-When `story.modelHints` is set in `doccraft.json`, it points at a **project-owned** markdown file (path relative to the project root). That file is the contract for which models suit which work and **how the team records that in stories**: plain markdown **appended at the end of Notes** (optionally under a final **Models / workflow** heading inside Notes). Doccraft does not validate the registry file — confirm only that the path exists before offering to help edit it.
+When `doccraft.json` declares an `extensions: [...]` array, each entry points
+at a project-local directory containing an `extension.yaml` manifest. At
+`doccraft update`, doccraft bakes fragments declared by those manifests into
+skill bodies at named injection points and scaffolds any declared folders.
+The extension framework is the supported way to add project-specific
+guidance (additional frontmatter fields, body sections, instructions) to
+the four core skills (`doccraft-story`, `doccraft-adr`,
+`doccraft-queue-audit`, `doccraft-session-wrap`) without forking doccraft.
 
-Recommended sections inside the registry (conventions, not schema-enforced):
+When editing the `extensions` array:
 
-- **Available models** — rows your team fills in for each tier or endpoint you use.
-- **Phases and roles** — optional; how different parts of the work (e.g. OpenSpec vs implementation) map to different models; restate that stories capture this as closing Notes prose.
-- **Decision rules** — optional; how guidance combines with story tags, impact, urgency, `openspec`.
-
-**Tailoring flow:** when the user invokes this skill and `story.modelHints` is configured, you may offer to walk them through replacing the neutral starter with the project's actual models and phase rules, *only if* the file still matches the bundled starter (heuristic: same byte size or matching header line as `templates/docs/reference/model-hints.md` in the doccraft package). If the file is clearly customised, do not reset it — help in place.
-
-**Constraint:** do not claim the registry passes schema validation beyond file existence at the configured path.
+- **Order is significant.** Fragments concatenate in declaration order at
+  each injection point — surface that to the user when adding a new entry.
+- **Each `path` must be a directory** relative to the project root, and
+  the directory must already exist (or be about to be created in the same
+  change). doccraft does not scaffold extension directories; the user
+  authors them.
+- **Validation runs at `doccraft update`**, not at config write time —
+  malformed manifests surface on the next update.
 
 ## Constraints
 

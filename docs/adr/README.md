@@ -21,4 +21,9 @@ explicit Status and supersession).
 | [006](006-doccraft-owns-tool-selection.md) | doccraft owns tool selection in init; forwards `--tools` to openspec | Accepted |
 | [007](007-default-skill-install-to-claude-skills.md) | Install skills only to `.claude/skills/`; `.cursor/skills/` is never written | Accepted |
 | [008](008-doccraft-yaml-at-root-with-docsdir.md) | Move config to `doccraft.yaml` at project root with single `docsDir` key | Accepted |
-| [012](012-story-model-hints-registry.md) | Optional `story.modelHints` path + project-owned registry markdown | Accepted |
+| [009](009-llm-command-and-assisted-setup.md) | `doccraft llm` command + assisted setup workflow | Accepted |
+| [010](010-business-module-opt-in.md) | Business module as an opt-in feature | Superseded by 013 |
+| [011](011-design-feature-opt-in.md) | Design feature as an opt-in module | Superseded by 013 |
+| [012](012-story-model-hints-registry.md) | Optional `story.modelHints` path + project-owned registry markdown | Superseded by 013 |
+| [013](013-extension-framework.md) | Extension framework — bake-time injection + scaffold | Accepted |
+| [014](014-monorepo-package-docs.md) | Monorepo support — per-package docs/ with namespaced ids | Accepted |
