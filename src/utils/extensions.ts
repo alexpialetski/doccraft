@@ -59,6 +59,17 @@ export interface LoadedExtension {
   scaffold: ScaffoldEntry[];
 }
 
+/**
+ * A declared monorepo package opting into doccraft planning. Slug is the
+ * last segment of the declared path and is used as the namespace prefix in
+ * `pkg/STR-NNNN` / `pkg/NNN-...md` references.
+ */
+export interface LoadedPackage {
+  slug: string;
+  /** Project-root-relative path as declared in doccraft.json. */
+  path: string;
+}
+
 interface RawManifest {
   name?: unknown;
   version?: unknown;
@@ -239,54 +250,154 @@ function validateScaffold(raw: unknown, extName: string, extDir: string): Scaffo
 }
 
 /**
- * Matches an inject marker pair, including the marker lines themselves and
- * the leading newline immediately before the close marker so empty regions
- * collapse cleanly. Tolerates whitespace inside the marker tags.
+ * Reads `doccraft.json.packages[]` and returns validated `LoadedPackage`
+ * entries in declaration order. Slugs (the last segment of each declared
+ * path) must be unique across the manifest; duplicates abort with a hard
+ * error naming both colliding paths. Unlike extensions, package directories
+ * are NOT validated for existence at load time — `doccraft update` scaffolds
+ * the docs/ tree under each declared package, so the directory may not yet
+ * exist when the user first declares it.
+ */
+export async function loadPackages(projectPath: string): Promise<LoadedPackage[]> {
+  const configPath = path.join(projectPath, 'doccraft.json');
+  if (!existsSync(configPath)) return [];
+
+  let cfg: Record<string, unknown>;
+  try {
+    const raw = await readFile(configPath, 'utf8');
+    cfg = JSON.parse(raw) as Record<string, unknown>;
+  } catch (err) {
+    throw new Error(`failed to read doccraft.json: ${(err as Error).message}`);
+  }
+
+  const declared = cfg['packages'];
+  if (declared === undefined) return [];
+  if (!Array.isArray(declared)) {
+    throw new Error('doccraft.json: "packages" must be an array');
+  }
+
+  const loaded: LoadedPackage[] = [];
+  const slugToPath = new Map<string, string>();
+  for (let i = 0; i < declared.length; i++) {
+    const entry = declared[i];
+    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
+      throw new Error(`doccraft.json: packages[${i}] must be an object with a "path" field`);
+    }
+    const rawPath = (entry as Record<string, unknown>)['path'];
+    if (typeof rawPath !== 'string' || rawPath.length === 0) {
+      throw new Error(`doccraft.json: packages[${i}].path must be a non-empty string`);
+    }
+    const normalised = rawPath.replace(/[\\/]+$/, '');
+    const slug = path.posix.basename(normalised.split(path.sep).join(path.posix.sep));
+    const existing = slugToPath.get(slug);
+    if (existing !== undefined) {
+      throw new Error(`duplicate package slug "${slug}" (paths ${existing} and ${rawPath})`);
+    }
+    slugToPath.set(slug, rawPath);
+    loaded.push({ slug, path: rawPath });
+  }
+  return loaded;
+}
+
+/**
+ * Matches any `<!-- doccraft:<directive> [attrs?] --> ... <!-- /doccraft:<directive> -->`
+ * pair. Capture 1 is the directive name; capture 2 (optional) is the raw
+ * attribute string for the opening marker.
  *
- * Capture group 1 is the point name.
+ * Dispatch in `bakeSkill` routes by directive name. v1 supports two:
+ * `inject` (extension-fragment concatenation per ADR 013) and `packages`
+ * (rendered package list per ADR 014). Unknown directives are a hard error.
  */
-const INJECT_MARKER_REGEX =
-  /<!--\s*doccraft:inject\s+point=([a-z][a-z0-9.-]*)\s*-->[\s\S]*?<!--\s*\/doccraft:inject\s*-->/g;
+const DIRECTIVE_REGEX =
+  /<!--\s*doccraft:([a-z][a-z0-9-]*)([^>]*?)\s*-->[\s\S]*?<!--\s*\/doccraft:\1\s*-->/g;
+
+const KNOWN_DIRECTIVES = new Set(['inject', 'packages']);
+
+function parseInjectAttrs(attrString: string, skillName: string): string {
+  const match = attrString.match(/point=([a-z][a-z0-9.-]*)/);
+  if (!match) {
+    throw new Error(`inject marker missing point= attribute in template ${skillName}`);
+  }
+  return match[1];
+}
 
 /**
- * Detects extra open markers without a matching close — used to surface
- * malformed templates rather than silently leaving the marker in place.
+ * Renders the package-list block baked into skill bodies at
+ * `<!-- doccraft:packages -->` markers when `packages[]` is non-empty.
+ * Uses `{{DOCS_DIR}}` so the subsequent `applyDocsDir` pass substitutes
+ * the project's configured docs directory.
  */
-const OPEN_MARKER_REGEX = /<!--\s*doccraft:inject\s+point=([a-z][a-z0-9.-]*)\s*-->/g;
+function renderPackagesDirective(packages: readonly LoadedPackage[]): string {
+  if (packages.length === 0) return '';
+  const lines: string[] = [];
+  lines.push('## Known package roots');
+  lines.push('');
+  lines.push(
+    'This project declares the following package roots. Each has its own'
+  );
+  lines.push(
+    '`{{DOCS_DIR}}/` tree (stories, ADRs, queue, backlog) mirroring the'
+  );
+  lines.push('project-root structure.');
+  lines.push('');
+  for (const pkg of packages) {
+    lines.push(`- \`${pkg.slug}\` — \`${pkg.path}/{{DOCS_DIR}}/\``);
+  }
+  lines.push('');
+  lines.push(
+    'When a `depends_on`, `adr_refs`, or queue reference uses the form'
+  );
+  lines.push(
+    '`<slug>/STR-NNNN` or `<slug>/NNN-...md`, resolve the path against the'
+  );
+  lines.push(
+    'matching root above. References without a slug prefix refer to the'
+  );
+  lines.push('project-root `{{DOCS_DIR}}/`.');
+  return lines.join('\n');
+}
 
 /**
- * Concatenates fragment bodies for each `<!-- doccraft:inject point=... -->`
- * marker pair in `rawTemplate`. Fragments are joined in extension declaration
- * order with a single blank line between contributions. Empty regions
- * (no matching extensions) strip the marker pair along with one trailing
- * newline.
+ * Walks `rawTemplate` for every `<!-- doccraft:<directive> -->` marker pair
+ * and dispatches each one by directive name. Currently:
+ *   - `inject`: concatenates extension fragments per `(skill, point)` pair
+ *     in extension declaration order with a blank line between contributions.
+ *   - `packages`: renders the package-list block when `packages[]` is
+ *     non-empty.
+ * Empty regions (no content to render) strip the marker pair along with
+ * one trailing newline. Unknown directives are a hard error.
  */
 export async function bakeSkill(
   rawTemplate: string,
   skillName: string,
-  extensions: readonly LoadedExtension[]
+  extensions: readonly LoadedExtension[] = [],
+  packages: readonly LoadedPackage[] = []
 ): Promise<string> {
-  const seenPoints = new Set<string>();
-  const allOpens = [...rawTemplate.matchAll(OPEN_MARKER_REGEX)];
-  for (const m of allOpens) {
-    const point = m[1];
-    if (!(VALID_INJECTION_POINTS as readonly string[]).includes(point)) {
-      throw new Error(`unknown injection point in template ${skillName}: ${point}`);
-    }
-    if (seenPoints.has(point)) {
-      throw new Error(`duplicate injection marker in template ${skillName}: ${point}`);
-    }
-    seenPoints.add(point);
-  }
+  const matches = [...rawTemplate.matchAll(DIRECTIVE_REGEX)];
 
-  const matches = [...rawTemplate.matchAll(INJECT_MARKER_REGEX)];
-  if (matches.length !== allOpens.length) {
-    const closed = new Set(matches.map((m) => m[1]));
-    const unmatched = allOpens.find((m) => !closed.has(m[1]));
-    if (unmatched) {
+  const seenInjectPoints = new Set<string>();
+  let seenPackagesMarker = false;
+  for (const match of matches) {
+    const directive = match[1];
+    if (!KNOWN_DIRECTIVES.has(directive)) {
       throw new Error(
-        `unterminated injection marker in template ${skillName}: ${unmatched[1]} has no matching close`
+        `unknown doccraft directive in template ${skillName}: ${directive}`
       );
+    }
+    if (directive === 'inject') {
+      const point = parseInjectAttrs(match[2] ?? '', skillName);
+      if (!(VALID_INJECTION_POINTS as readonly string[]).includes(point)) {
+        throw new Error(`unknown injection point in template ${skillName}: ${point}`);
+      }
+      if (seenInjectPoints.has(point)) {
+        throw new Error(`duplicate injection marker in template ${skillName}: ${point}`);
+      }
+      seenInjectPoints.add(point);
+    } else if (directive === 'packages') {
+      if (seenPackagesMarker) {
+        throw new Error(`duplicate doccraft:packages marker in template ${skillName}`);
+      }
+      seenPackagesMarker = true;
     }
   }
 
@@ -294,25 +405,26 @@ export async function bakeSkill(
   const replacements: Replacement[] = [];
 
   for (const match of matches) {
-    const point = match[1] as InjectionPoint;
-    const fragments: string[] = [];
-    for (const ext of extensions) {
-      for (const inject of ext.injects) {
-        if (inject.skill !== skillName) continue;
-        if (inject.point !== point) continue;
-        const body = await readFile(inject.fragmentPath, 'utf8');
-        fragments.push(body.replace(/\s+$/, ''));
+    const directive = match[1];
+    let replacement = '';
+    if (directive === 'inject') {
+      const point = parseInjectAttrs(match[2] ?? '', skillName) as InjectionPoint;
+      const fragments: string[] = [];
+      for (const ext of extensions) {
+        for (const inject of ext.injects) {
+          if (inject.skill !== skillName) continue;
+          if (inject.point !== point) continue;
+          const body = await readFile(inject.fragmentPath, 'utf8');
+          fragments.push(body.replace(/\s+$/, ''));
+        }
       }
+      replacement = fragments.length === 0 ? '' : fragments.join('\n\n');
+    } else if (directive === 'packages') {
+      replacement = renderPackagesDirective(packages);
     }
 
     const start = match.index ?? 0;
     const end = start + match[0].length;
-    let replacement: string;
-    if (fragments.length === 0) {
-      replacement = '';
-    } else {
-      replacement = fragments.join('\n\n');
-    }
     replacements.push({ start, end, replacement });
   }
 

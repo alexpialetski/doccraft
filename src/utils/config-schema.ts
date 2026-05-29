@@ -184,6 +184,32 @@ export const DOCCRAFT_CONFIG_SCHEMA = {
         },
       },
     },
+    packages: {
+      title: 'Monorepo package roots',
+      description:
+        'Ordered array of package directories that opt into doccraft planning. Each entry declares a path (relative to the project root) under which the same docs/ skeleton — stories, ADRs, queue, backlog — is scaffolded and managed. Declaration order is significant for the rendered package list in skill bodies. Absent or empty preserves single-root behaviour. Slugs (the last path segment of each declared path) must be unique. See ADR 014 in the doccraft repo for the convention.',
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          path: {
+            title: 'Package directory path',
+            description:
+              'Path to the package directory containing the docs/ tree, relative to the project root. The last segment is used as the namespace slug for that package.',
+            type: 'string',
+            examples: ['packages/audio-engine', 'packages/ui-shell'],
+          },
+        },
+        required: ['path'],
+      },
+      examples: [
+        [],
+        [
+          { path: 'packages/audio-engine' },
+          { path: 'packages/ui-shell' },
+        ],
+      ],
+    },
     extensions: {
       title: 'Doccraft extensions',
       description:

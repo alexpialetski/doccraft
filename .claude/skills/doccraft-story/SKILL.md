@@ -46,6 +46,31 @@ Adding to a list in `doccraft.yaml` teaches the skill a new valid
 value without touching this file (which `doccraft update` regenerates).
 That is the intended way to extend vocabulary for a project.
 
+## Package context
+
+
+For monorepo projects, stories may live at the project root or under a
+declared package's `docs/stories/` tree (a **Known package roots**
+block appears above when packages are declared). For single-root projects
+no block appears, every story lives at the project-root
+`docs/stories/`, and the namespace rules below do not apply.
+
+When the project declares packages, decide which scope to write to:
+
+- **Explicit `package:` arg.** If the user names a package (e.g. "create
+  a story for `audio-engine`"), write to that package's
+  `docs/stories/` and use the namespaced id form
+  `<slug>/STR-NNNN`.
+- **Active-file inference.** If the user is editing a file under a
+  declared package path, default to that package's docs root.
+- **Root default.** Otherwise, write to the project-root
+  `docs/stories/` with an unprefixed id.
+
+In `depends_on`, the form `<slug>/STR-NNNN` references a story under that
+package's `docs/stories/`; unprefixed ids always refer to the
+project-root scope. The same namespace rule applies to `adr_refs`
+(unprefixed = root, `<slug>/NNN-slug.md` = package-scoped).
+
 ## File location and naming
 
 - Path: **`docs/stories/<slug>.md`** — kebab-case slug.

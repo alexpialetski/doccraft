@@ -13,9 +13,12 @@ import {
   VALID_INJECTION_POINTS,
   bakeSkill,
   loadExtensions,
+  loadPackages,
   scaffoldExtensions,
   type LoadedExtension,
+  type LoadedPackage,
 } from '../src/utils/extensions.js';
+import { scaffoldPackages } from '../src/utils/skills.js';
 
 const tempDirs: string[] = [];
 
@@ -436,5 +439,228 @@ describe('scaffoldExtensions', () => {
     expect(created).not.toContain('docs/biz/keep.md');
     expect(readFileSync(path.join(project, 'docs/biz/keep.md'), 'utf8')).toBe('user-keep\n');
     expect(existsSync(path.join(project, 'docs/biz/add.md'))).toBe(true);
+  });
+});
+
+function writeConfigWithPackages(project: string, paths: string[]): void {
+  writeFileSync(
+    path.join(project, 'doccraft.json'),
+    JSON.stringify({ packages: paths.map((p) => ({ path: p })) }),
+    'utf8'
+  );
+}
+
+describe('loadPackages', () => {
+  it('returns [] when doccraft.json is missing', async () => {
+    const project = makeTempProject();
+    expect(await loadPackages(project)).toEqual([]);
+  });
+
+  it('returns [] when packages field is absent', async () => {
+    const project = makeTempProject();
+    writeFileSync(
+      path.join(project, 'doccraft.json'),
+      JSON.stringify({ docsDir: 'docs' }),
+      'utf8'
+    );
+    expect(await loadPackages(project)).toEqual([]);
+  });
+
+  it('returns [] for an empty packages array', async () => {
+    const project = makeTempProject();
+    writeConfigWithPackages(project, []);
+    expect(await loadPackages(project)).toEqual([]);
+  });
+
+  it('rejects a non-array packages value', async () => {
+    const project = makeTempProject();
+    writeFileSync(
+      path.join(project, 'doccraft.json'),
+      JSON.stringify({ packages: { path: 'x' } }),
+      'utf8'
+    );
+    await expect(loadPackages(project)).rejects.toThrow(/must be an array/);
+  });
+
+  it('rejects entries with missing path', async () => {
+    const project = makeTempProject();
+    writeFileSync(
+      path.join(project, 'doccraft.json'),
+      JSON.stringify({ packages: [{}] }),
+      'utf8'
+    );
+    await expect(loadPackages(project)).rejects.toThrow(/packages\[0\].path/);
+  });
+
+  it('rejects non-string path values', async () => {
+    const project = makeTempProject();
+    writeFileSync(
+      path.join(project, 'doccraft.json'),
+      JSON.stringify({ packages: [{ path: 42 }] }),
+      'utf8'
+    );
+    await expect(loadPackages(project)).rejects.toThrow(/non-empty string/);
+  });
+
+  it('derives slug as the basename of the path', async () => {
+    const project = makeTempProject();
+    writeConfigWithPackages(project, ['packages/audio-engine', 'services/foo']);
+    const loaded = await loadPackages(project);
+    expect(loaded.map((p) => p.slug)).toEqual(['audio-engine', 'foo']);
+    expect(loaded.map((p) => p.path)).toEqual(['packages/audio-engine', 'services/foo']);
+  });
+
+  it('rejects duplicate slugs across distinct paths', async () => {
+    const project = makeTempProject();
+    writeConfigWithPackages(project, ['packages/a/foo', 'services/b/foo']);
+    await expect(loadPackages(project)).rejects.toThrow(/duplicate package slug "foo"/);
+  });
+
+  it('does not require declared package directories to exist on disk', async () => {
+    const project = makeTempProject();
+    writeConfigWithPackages(project, ['packages/will-be-scaffolded']);
+    const loaded = await loadPackages(project);
+    expect(loaded).toHaveLength(1);
+    expect(loaded[0].slug).toBe('will-be-scaffolded');
+  });
+});
+
+describe('bakeSkill — packages directive', () => {
+  it('strips the marker pair when packages is empty', async () => {
+    const tmpl =
+      'Before\n<!-- doccraft:packages -->\n<!-- /doccraft:packages -->\nAfter\n';
+    const baked = await bakeSkill(tmpl, 'doccraft-story', [], []);
+    expect(baked).not.toContain('doccraft:packages');
+    expect(baked).toBe('Before\nAfter\n');
+  });
+
+  it('produces byte-identical output regardless of marker presence when packages is empty', async () => {
+    const withMarker =
+      'Before\n<!-- doccraft:packages -->\n<!-- /doccraft:packages -->\nAfter\n';
+    const without = 'Before\nAfter\n';
+    const bakedWith = await bakeSkill(withMarker, 'doccraft-story', [], []);
+    expect(bakedWith).toBe(without);
+  });
+
+  it('renders the package list when packages is non-empty', async () => {
+    const tmpl = '<!-- doccraft:packages -->\n<!-- /doccraft:packages -->\n';
+    const packages: LoadedPackage[] = [
+      { slug: 'audio-engine', path: 'packages/audio-engine' },
+      { slug: 'ui-shell', path: 'packages/ui-shell' },
+    ];
+    const baked = await bakeSkill(tmpl, 'doccraft-story', [], packages);
+    expect(baked).toContain('## Known package roots');
+    expect(baked).toContain('`audio-engine` — `packages/audio-engine/{{DOCS_DIR}}/`');
+    expect(baked).toContain('`ui-shell` — `packages/ui-shell/{{DOCS_DIR}}/`');
+    expect(baked).not.toContain('doccraft:packages');
+  });
+
+  it('renders packages in declaration order', async () => {
+    const tmpl = '<!-- doccraft:packages -->\n<!-- /doccraft:packages -->\n';
+    const packages: LoadedPackage[] = [
+      { slug: 'second', path: 'packages/second' },
+      { slug: 'first', path: 'packages/first' },
+    ];
+    const baked = await bakeSkill(tmpl, 'doccraft-story', [], packages);
+    const secondIdx = baked.indexOf('`second`');
+    const firstIdx = baked.indexOf('`first`');
+    expect(secondIdx).toBeGreaterThan(0);
+    expect(firstIdx).toBeGreaterThan(secondIdx);
+  });
+
+  it('rejects duplicate doccraft:packages markers in one template', async () => {
+    const tmpl =
+      '<!-- doccraft:packages -->\n<!-- /doccraft:packages -->\n' +
+      '<!-- doccraft:packages -->\n<!-- /doccraft:packages -->\n';
+    await expect(bakeSkill(tmpl, 'doccraft-story', [], [])).rejects.toThrow(
+      /duplicate doccraft:packages marker/
+    );
+  });
+
+  it('rejects unknown directive names', async () => {
+    const tmpl =
+      '<!-- doccraft:pakcages -->\n<!-- /doccraft:pakcages -->\n';
+    await expect(bakeSkill(tmpl, 'doccraft-story', [], [])).rejects.toThrow(
+      /unknown doccraft directive/
+    );
+  });
+
+  it('processes mixed inject + packages markers independently', async () => {
+    const project = makeTempProject();
+    const ext = buildExtensionForTest(project, 'mix', [
+      {
+        skill: 'doccraft-story',
+        point: 'story.instructions',
+        fragmentName: 'a.md',
+        body: 'Injected.',
+      },
+    ]);
+    const tmpl =
+      '<!-- doccraft:packages -->\n<!-- /doccraft:packages -->\n' +
+      'middle\n' +
+      '<!-- doccraft:inject point=story.instructions -->\n' +
+      '<!-- /doccraft:inject -->\n';
+    const packages: LoadedPackage[] = [{ slug: 'pkg', path: 'packages/pkg' }];
+    const baked = await bakeSkill(tmpl, 'doccraft-story', [ext], packages);
+    expect(baked).toContain('Known package roots');
+    expect(baked).toContain('Injected.');
+    expect(baked).not.toContain('doccraft:packages');
+    expect(baked).not.toContain('doccraft:inject');
+  });
+
+  it('is deterministic across runs when packages is non-empty', async () => {
+    const tmpl = '<!-- doccraft:packages -->\n<!-- /doccraft:packages -->\n';
+    const packages: LoadedPackage[] = [{ slug: 'a', path: 'packages/a' }];
+    const first = await bakeSkill(tmpl, 'doccraft-story', [], packages);
+    const second = await bakeSkill(tmpl, 'doccraft-story', [], packages);
+    expect(first).toBe(second);
+  });
+});
+
+describe('scaffoldPackages', () => {
+  it('scaffolds the bundled templates/docs skeleton under each declared package', async () => {
+    const project = makeTempProject();
+    const packages: LoadedPackage[] = [
+      { slug: 'pkg-a', path: 'packages/pkg-a' },
+      { slug: 'pkg-b', path: 'packages/pkg-b' },
+    ];
+    const created = await scaffoldPackages(project, packages, 'docs');
+    expect(created).toContain('packages/pkg-a/docs/README.md');
+    expect(created).toContain('packages/pkg-a/docs/queue.md');
+    expect(created).toContain('packages/pkg-a/docs/backlog.md');
+    expect(created).toContain('packages/pkg-b/docs/README.md');
+    expect(existsSync(path.join(project, 'packages/pkg-a/docs/queue.md'))).toBe(true);
+    expect(existsSync(path.join(project, 'packages/pkg-b/docs/stories/README.md'))).toBe(true);
+  });
+
+  it('preserves existing per-package docs files', async () => {
+    const project = makeTempProject();
+    mkdirSync(path.join(project, 'packages/keep/docs'), { recursive: true });
+    writeFileSync(
+      path.join(project, 'packages/keep/docs/queue.md'),
+      '# pre-existing\n',
+      'utf8'
+    );
+    const packages: LoadedPackage[] = [{ slug: 'keep', path: 'packages/keep' }];
+    const created = await scaffoldPackages(project, packages, 'docs');
+    expect(created).not.toContain('packages/keep/docs/queue.md');
+    expect(created).toContain('packages/keep/docs/README.md');
+    expect(
+      readFileSync(path.join(project, 'packages/keep/docs/queue.md'), 'utf8')
+    ).toBe('# pre-existing\n');
+  });
+
+  it('returns an empty list when packages is empty', async () => {
+    const project = makeTempProject();
+    const created = await scaffoldPackages(project, [], 'docs');
+    expect(created).toEqual([]);
+  });
+
+  it('honours a custom docsDir under each package path', async () => {
+    const project = makeTempProject();
+    const packages: LoadedPackage[] = [{ slug: 'p', path: 'packages/p' }];
+    const created = await scaffoldPackages(project, packages, 'planning');
+    expect(created).toContain('packages/p/planning/README.md');
+    expect(existsSync(path.join(project, 'packages/p/planning/queue.md'))).toBe(true);
   });
 });

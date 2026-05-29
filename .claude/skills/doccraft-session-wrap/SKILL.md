@@ -49,6 +49,16 @@ If `doccraft.yaml` is missing, apply the defaults above. The `ADR`,
 `Story`, and `Backlog / queue` categories are always in scope — they
 are the load-bearing set.
 
+## Package routing
+
+
+For monorepo projects (a **Known package roots** block appears above when
+packages are declared), artifact proposals route to the package whose
+body the conversation referenced most. Default to the project root when
+no single package dominates. The paths in the docs map below resolve
+relative to the chosen package's `docs/` (or the project-root
+`docs/` for single-root projects).
+
 ## Docs map (where things go)
 
 Authoritative overview, if the project has one: `docs/README.md`.

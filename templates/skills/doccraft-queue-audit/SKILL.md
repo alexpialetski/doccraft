@@ -54,6 +54,36 @@ Relevant keys:
   — thresholds that trigger stop-and-confirm in Agent mode. Defaults:
   `5`, `50`. See **Containment** below.
 
+## Multi-package scope
+
+<!-- doccraft:packages -->
+<!-- /doccraft:packages -->
+
+For monorepo projects (a **Known package roots** block appears above when
+packages are declared), this skill operates over multiple docs roots.
+For single-root projects the entire skill operates on the project-root
+`{{DOCS_DIR}}/`.
+
+When the project declares packages, the default scope is the active
+package, determined by (a) an explicit `package:` arg in the user
+request; (b) inference from the active file's path under a declared
+package root; or (c) the project root if neither applies. The skill reads
+`<scope>/{{DOCS_DIR}}/stories/`, `<scope>/{{DOCS_DIR}}/queue.md`, and
+`<scope>/{{DOCS_DIR}}/backlog.md` for that scope only.
+
+**Cross-scope `depends_on`.** Story `depends_on` entries of the form
+`<slug>/STR-NNNN` reference a story in another package. When checking
+whether a prerequisite is satisfied, resolve the target against the
+matching package root, read its `status`, and treat `done` as satisfied.
+Cross-scope edges DO NOT trigger reorders in the other package's queue —
+flag any that look stale and let the user choose.
+
+**Aggregate view.** When the user asks "what's unblocked anywhere", "show
+me all ready work", or similar cross-scope pick-next questions, walk
+every package root and the project root, surface unblocked stories per
+scope, and emit a single ordered list with the scope-prefixed id of each
+candidate. Do not write an aggregate file to disk — prose only.
+
 ## What this skill reads and writes
 
 **Reads:**
@@ -150,6 +180,9 @@ Do not guess through these — list them clearly and let the user decide:
 - **Ambiguous editorial reorder.** Multiple valid orderings satisfy
   the constraints. Summarise the options (e.g. "put P0.2 before P0.5
   because impact:H, or after because urgency:soon"); do not pick.
+- **Ambiguous scope (monorepo).** No explicit `package:` arg and the
+  user's briefing references stories across multiple package roots.
+  Ask which scope to audit before proceeding.
 
 ---
 
