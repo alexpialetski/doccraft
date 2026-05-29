@@ -25,10 +25,20 @@ remain in the backlog for later consideration.
 
 **Recently shipped:**
 
-- Extension framework + monorepo support (ADRs 013, 014). Bake-time
-  injection markers (`<!-- doccraft:inject point=... -->`) and scaffold
-  copying replace the bespoke `features` array, `feature:` frontmatter
-  gate, business/model-hints integration blocks, and the designer-skills
+- Monorepo support (ADR 014). `packages: [{ path }]` in doccraft.json
+  opts each declared package into its own `<docsDir>/` tree (stories,
+  ADRs, queue, backlog) scaffolded from the bundled `templates/docs/`.
+  New `<!-- doccraft:packages -->` directive bakes a "Known package
+  roots" block into the four core skill bodies; skill prose teaches the
+  namespaced-id convention (`pkg/STR-NNNN`) and the package-context
+  resolution rules. Additive — `packages: []` or absent preserves
+  byte-identical 4.0.0 behaviour. Marker parser generalised to
+  dispatch on directive name (`inject` vs `packages`). See
+  [openspec/changes/monorepo-support](../openspec/changes/monorepo-support).
+- Extension framework (ADR 013). Bake-time injection markers
+  (`<!-- doccraft:inject point=... -->`) and scaffold copying replace
+  the bespoke `features` array, `feature:` frontmatter gate,
+  business/model-hints integration blocks, and the designer-skills
   subprocess. Audio-stage carries business/design/model-hints as
   extensions in its own repo. Breaking change in
   [openspec/changes/extension-framework](../openspec/changes/extension-framework).

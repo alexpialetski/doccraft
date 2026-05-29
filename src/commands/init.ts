@@ -15,11 +15,12 @@ import {
   readDocsDirFromConfig,
   resolveToolSelection,
   scaffoldDocsIfMissing,
+  scaffoldPackages,
   scaffoldRootConfigIfMissing,
   SUPPORTED_TOOLS,
   type SkillTool,
 } from '../utils/skills.js';
-import { loadExtensions, scaffoldExtensions } from '../utils/extensions.js';
+import { loadExtensions, loadPackages, scaffoldExtensions } from '../utils/extensions.js';
 
 export interface InitOptions {
   tools?: string;
@@ -105,6 +106,12 @@ export async function installDoccraftSkills(
       chalk.dim(`\nLoaded ${extensions.length} extension(s): ${extensions.map((e) => e.name).join(', ')}`)
     );
   }
+  const packages = await loadPackages(projectPath);
+  if (packages.length > 0) {
+    console.log(
+      chalk.dim(`\nLoaded ${packages.length} package(s): ${packages.map((p) => p.slug).join(', ')}`)
+    );
+  }
 
   const skills = await getAvailableSkills();
   const rules = await getAvailableRules();
@@ -133,7 +140,7 @@ export async function installDoccraftSkills(
   ).start();
 
   try {
-    await installSkills(projectPath, [canonicalSkillsTool], skills, docsDir, extensions);
+    await installSkills(projectPath, [canonicalSkillsTool], skills, docsDir, extensions, packages);
     const installedRules = await installRules(projectPath, tools, rules, docsDir);
 
     const skillsSummary = `${skills.length} skill(s) into ${canonicalSkillsTool.skillsDir}`;
@@ -157,6 +164,15 @@ export async function installDoccraftSkills(
     if (created.length > 0) {
       console.log(
         chalk.dim(`\nScaffolded ${created.length} extension file(s): ${created.join(', ')}`)
+      );
+    }
+  }
+
+  if (packages.length > 0) {
+    const created = await scaffoldPackages(projectPath, packages, docsDir);
+    if (created.length > 0) {
+      console.log(
+        chalk.dim(`\nScaffolded ${created.length} package docs file(s): ${created.join(', ')}`)
       );
     }
   }

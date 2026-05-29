@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 import select from '@inquirer/select';
 import { DOCCRAFT_CONFIG_SCHEMA } from './config-schema.js';
-import { bakeSkill, type LoadedExtension } from './extensions.js';
+import { bakeSkill, type LoadedExtension, type LoadedPackage } from './extensions.js';
 
 const _require = createRequire(import.meta.url);
 const PACKAGE_VERSION: string = (_require('../../package.json') as { version: string }).version;
@@ -329,7 +329,8 @@ export async function installSkills(
   tools: readonly SkillTool[],
   skills?: readonly SkillTemplate[],
   docsDir?: string,
-  extensions: readonly LoadedExtension[] = []
+  extensions: readonly LoadedExtension[] = [],
+  packages: readonly LoadedPackage[] = []
 ): Promise<InstalledSkill[]> {
   const available = skills ?? (await getAvailableSkills());
   const effectiveDocsDir = docsDir ?? (await readDocsDirFromConfig(projectPath));
@@ -345,7 +346,7 @@ export async function installSkills(
         skill.name === 'doccraft-config'
           ? raw.replace('{{DOCCRAFT_CONFIG_SCHEMA}}', SCHEMA_JSON)
           : raw;
-      const baked = await bakeSkill(withSchema, skill.name, extensions);
+      const baked = await bakeSkill(withSchema, skill.name, extensions, packages);
       const substituted = applyDocsDir(baked, effectiveDocsDir);
       const body = injectManagedHeader(substituted);
       const targetDir = path.join(toolSkillsRoot, skill.name);
@@ -436,27 +437,62 @@ async function walkTemplateFiles(root: string): Promise<string[]> {
 }
 
 /**
+ * Walks `TEMPLATES_DOCS_DIR` and writes any missing file into `targetDocsRoot`.
+ * Returns project-relative POSIX paths of created files (for log output).
+ * Never overwrites existing content. Shared between the root `docs/` scaffold
+ * and the per-package monorepo scaffold (ADR 014).
+ */
+async function scaffoldDocsAt(
+  targetDocsRoot: string,
+  projectPath: string
+): Promise<string[]> {
+  if (!existsSync(TEMPLATES_DOCS_DIR)) return [];
+  const relativePaths = await walkTemplateFiles(TEMPLATES_DOCS_DIR);
+  const created: string[] = [];
+
+  for (const rel of relativePaths) {
+    const targetPath = path.join(targetDocsRoot, rel);
+    if (existsSync(targetPath)) continue;
+    const body = await readFile(path.join(TEMPLATES_DOCS_DIR, rel), 'utf8');
+    await mkdir(path.dirname(targetPath), { recursive: true });
+    await writeFile(targetPath, body, 'utf8');
+    const projectRel = path.relative(projectPath, targetPath);
+    created.push(projectRel.split(path.sep).join(path.posix.sep));
+  }
+
+  return created;
+}
+
+/**
  * Seeds `docs/` with starter files that the skills reference (README,
  * backlog.md, queue.md, stories/README.md, adr/README.md). Skips any file
  * that already exists — `doccraft update` must never clobber a user's
  * backlog rows or their project description.
  */
 export async function scaffoldDocsIfMissing(projectPath: string): Promise<string[]> {
-  if (!existsSync(TEMPLATES_DOCS_DIR)) return [];
-
   const docsDir = await readDocsDirFromConfig(projectPath);
-  const relativePaths = await walkTemplateFiles(TEMPLATES_DOCS_DIR);
+  return scaffoldDocsAt(path.join(projectPath, docsDir), projectPath);
+}
+
+/**
+ * Per ADR 014: for each declared monorepo package, scaffold the same
+ * `templates/docs/` skeleton under `<package.path>/<docsDir>/` using
+ * never-overwrite semantics. Runs after the root scaffold and after the
+ * extension scaffold so any path collisions defer to pre-existing content.
+ */
+export async function scaffoldPackages(
+  projectPath: string,
+  packages: readonly LoadedPackage[],
+  docsDir: string
+): Promise<string[]> {
   const created: string[] = [];
-
-  for (const rel of relativePaths) {
-    const targetPath = path.join(projectPath, docsDir, rel);
-    if (existsSync(targetPath)) continue;
-    const body = await readFile(path.join(TEMPLATES_DOCS_DIR, rel), 'utf8');
-    await mkdir(path.dirname(targetPath), { recursive: true });
-    await writeFile(targetPath, body, 'utf8');
-    created.push(path.posix.join(docsDir, rel));
+  for (const pkg of packages) {
+    // path.resolve so an absolute pkg.path overrides projectPath, matching
+    // how scaffoldExtensions and loadExtensions resolve paths.
+    const target = path.resolve(projectPath, pkg.path, docsDir);
+    const more = await scaffoldDocsAt(target, projectPath);
+    created.push(...more);
   }
-
   return created;
 }
 

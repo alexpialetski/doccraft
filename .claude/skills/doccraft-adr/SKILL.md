@@ -32,6 +32,32 @@ Relevant keys:
 - `docsDir` — root folder for all docs, relative to project root. Default:
   `docs`. ADRs live at `{docsDir}/adr/`.
 
+## Package context
+
+
+For monorepo projects, ADRs may live at the project root or under a
+declared package's `docs/adr/` tree (a **Known package roots**
+block appears above when packages are declared). For single-root projects
+no block appears, every ADR lives at the project-root
+`docs/adr/`, and the namespace rules below do not apply.
+
+When the project declares packages, decide which scope to write to:
+
+- **Explicit `package:` arg.** Honour an explicit package argument — write
+  under that package's `docs/adr/`.
+- **Active-file inference.** If the user is editing a file under a
+  declared package path, default to that package's docs root.
+- **Root default.** Otherwise, write to the project-root
+  `docs/adr/`.
+
+ADR numbering is per-scope: root and each package have independent number
+sequences. `audio-engine/003-foo.md` and the root `003-bar.md` are both
+valid concurrent ADRs.
+
+References in **Status: Superseded by …** and a story's `adr_refs:` may
+use the namespaced form `<slug>/NNN-slug.md`. Unprefixed filenames always
+refer to the project-root `docs/adr/`.
+
 ## File location and naming
 
 - Path: **`docs/adr/NNN-short-slug.md`** — three-digit zero-padded index, kebab-case slug (e.g. `001-managed-postgres.md`).
