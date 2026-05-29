@@ -3,6 +3,8 @@
   "version": "{{DOCCRAFT_VERSION}}",
   "_hint": "Edit with the doccraft-config skill (npx doccraft@latest llm exposes the schema).",
   "docsDir": "docs",
+  "packages": [],
+  "extensions": [],
   "story": {
     "areas": ["api", "cli", "auth", "data", "infra", "schemas"],
     "slices": ["ui", "admin", "onboarding"],
