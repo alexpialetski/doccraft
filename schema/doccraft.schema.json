@@ -117,6 +117,90 @@
             ]
           ]
         },
+        "status": {
+          "title": "Story status values",
+          "description": "Allowed values for the `status:` frontmatter field on stories. Doccraft-story validates frontmatter against this list and rejects unknown values. Defaults to the standard todo / in_progress / done lifecycle; extend if your project uses additional states (e.g. blocked, abandoned, parked).",
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "examples": [
+            [
+              "todo",
+              "in_progress",
+              "done"
+            ],
+            [
+              "todo",
+              "in_progress",
+              "done",
+              "blocked",
+              "abandoned"
+            ],
+            [
+              "planned",
+              "active",
+              "shipped",
+              "parked"
+            ]
+          ]
+        },
+        "urgency": {
+          "title": "Story urgency values",
+          "description": "Allowed values for the `urgency:` frontmatter field on stories. Defaults to the now / soon / later scale; some projects prefer to use tier names (p0..p4) directly here, or mix both forms.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "examples": [
+            [
+              "now",
+              "soon",
+              "later"
+            ],
+            [
+              "p0",
+              "p1",
+              "p2",
+              "p3",
+              "p4"
+            ],
+            [
+              "now",
+              "soon",
+              "later",
+              "p0",
+              "p1",
+              "p2"
+            ]
+          ]
+        },
+        "impact": {
+          "title": "Story impact values",
+          "description": "Allowed values for the `impact:` frontmatter field on stories. Defaults to the H / M / L scale; projects that prefer descriptive words (high / medium / low) or other taxonomies can override.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "examples": [
+            [
+              "H",
+              "M",
+              "L"
+            ],
+            [
+              "high",
+              "medium",
+              "low"
+            ],
+            [
+              "H",
+              "M",
+              "L",
+              "medium"
+            ]
+          ]
+        },
         "id": {
           "title": "Story identifier format",
           "description": "Controls which `id:` values doccraft-story accepts. Validated on creation and edit.",
