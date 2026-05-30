@@ -497,7 +497,7 @@ validation in Edit mode instead of calling any CLI.
      does not maintain.
 3. Show the proposed `doccraft.json` diff (or full file if none exists yet).
 4. Wait for approval before writing any file.
-5. On approval: write `doccraft.json` at the project root. Do not rewrite
+5. On approval: write `doccraft.json` at the project root. MUST NOT rewrite
    `version` or `$schema` — preserve those bytes exactly.
 
 ### Edit mode (specific change requested)
@@ -535,13 +535,77 @@ When editing the `extensions` array:
 
 ## Constraints
 
-- **Never call `npx doccraft@latest`** — the embedded schema is authoritative
+- **NEVER call `npx doccraft@latest`** — the embedded schema is authoritative
   for the installed version. Reaching for `@latest` could propose fields not
   yet supported.
-- **Never rewrite `version` or `$schema`** — those are managed by
+- **NEVER rewrite `version` or `$schema`** — those are managed by
   `doccraft update` / `bumpConfigVersion`. Preserve them verbatim.
 - **Tolerate a missing `doccraft.json`** — proceed with defaults; offer to
   create the file in Analyse mode.
-- **Gate on approval** before writing any file in Analyse mode. Edit mode may
-  apply without a gate for single-field changes unless the change is
+- **MUST gate on approval** before writing any file in Analyse mode. Edit mode
+  may apply without a gate for single-field changes unless the change is
   destructive (e.g. clearing an entire array).
+
+## Pre-execution validation
+
+Before writing or updating `doccraft.json`, MUST complete these checks:
+
+1. **Read existing file** — if `doccraft.json` exists, read it in full
+   before proposing any changes. NEVER write from assumptions about
+   current values.
+2. **Schema validation** — validate the proposed output against the
+   embedded schema above. If any field violates the schema, report the
+   violation and stop — MUST NOT write an invalid file.
+3. **Preserve managed fields** — confirm that `version` and `$schema`
+   are byte-identical to the existing file. If the file is new, omit
+   both (they are set by `doccraft update`).
+4. **Extension paths exist** — if editing the `extensions` array, verify
+   each `path` directory exists on disk (or is being created in the same
+   change). Flag missing directories rather than writing a broken config.
+5. **No duplicate entries** — arrays like `story.areas`, `story.slices`,
+   `story.themes` MUST NOT contain duplicate values. Deduplicate silently
+   and note what was removed.
+
+## Invalid examples (do not use)
+
+- Calling `npx doccraft@latest llm` or any CLI to fetch the schema —
+  NEVER; the embedded schema is authoritative.
+- Overwriting `version` or `$schema` — NEVER; those are managed by
+  `doccraft update`.
+- Writing `doccraft.json` in Analyse mode without user approval —
+  NEVER; gate on approval first.
+- Adding a value to `story.status` that duplicates an existing entry
+  (e.g. adding `todo` when it already exists) — NEVER; deduplicate.
+- Proposing fields not present in the embedded schema — NEVER; unknown
+  fields will confuse future `doccraft update` runs.
+- Clearing an entire array in Edit mode without confirmation — NEVER;
+  destructive changes MUST be gated.
+- Setting `extensions[].path` to a non-existent directory without
+  flagging it — NEVER; the user MUST create the directory first.
+
+## Done condition
+
+The task is complete when:
+
+- In **Analyse mode**: proposed values have been shown with reasoning,
+  user has approved, and `doccraft.json` has been written at the project
+  root with `version` and `$schema` preserved.
+- In **Edit mode**: the targeted field has been updated, the full file
+  validates against the embedded schema, and `doccraft.json` has been
+  written with only the intended change applied.
+- The output confirms what changed (field names and old → new values).
+
+## Workflow reminders
+
+- After changing `story.areas`, `story.slices`, or `story.themes`,
+  existing stories with tags not in the new vocabulary are still valid —
+  do not retroactively edit story files. The new vocabulary applies to
+  future stories only.
+- After changing `story.status`, `story.urgency`, or `story.impact`,
+  verify no existing story uses a value that was removed. If any do,
+  flag them so the user can update those stories.
+- After changing `queueAudit.scale` thresholds, the next
+  `doccraft-queue-audit` run will use the new limits — no further
+  action needed.
+- After adding or removing an `extensions` entry, remind the user to
+  run `doccraft update` to bake fragments into skill bodies.
