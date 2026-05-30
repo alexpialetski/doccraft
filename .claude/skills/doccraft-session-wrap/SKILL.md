@@ -209,3 +209,4 @@ The task is complete when:
   invoke each relevant skill in sequence.
 - If the proposals table includes both an ADR and a story that references
   it, create the ADR first so the story's `adr_refs` can reference it.
+
