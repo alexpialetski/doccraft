@@ -44,7 +44,7 @@ Relevant keys:
 - `queue.tables.suggestedOrder`, `queue.tables.platformSpikes` — the
   heading text this skill uses to find the two tables in the queue file.
   Defaults: `Suggested order`, `Platform spikes`. Rename in config if
-  your project uses different headings; the skill matches on heading
+  the project uses different headings; the skill matches on heading
   text, not row position.
 - `story.id.pattern` — regex for valid story ids. Used when listing
   unknown-id errors and when normalising obvious typos.
@@ -75,14 +75,14 @@ package root; or (c) the project root if neither applies. The skill reads
 `<slug>/STR-NNNN` reference a story in another package. When checking
 whether a prerequisite is satisfied, resolve the target against the
 matching package root, read its `status`, and treat `done` as satisfied.
-Cross-scope edges DO NOT trigger reorders in the other package's queue —
+Cross-scope edges MUST NOT trigger reorders in the other package's queue —
 flag any that look stale and let the user choose.
 
 **Aggregate view.** When the user asks "what's unblocked anywhere", "show
 me all ready work", or similar cross-scope pick-next questions, walk
 every package root and the project root, surface unblocked stories per
 scope, and emit a single ordered list with the scope-prefixed id of each
-candidate. Do not write an aggregate file to disk — prose only.
+candidate. NEVER write an aggregate file to disk — prose only.
 
 ## What this skill reads and writes
 
@@ -115,11 +115,11 @@ Two behaviours, controlled by the environment — not by user enthusiasm:
   read + fix — apply objective mechanical fixes in the same turn, then
   report what changed. See **Auto-apply** below.
 - **Propose (Ask / read-only mode).** The tool cannot write files. Emit a
-  diff-style proposal plus the same issues list; do not suggest commits.
+  diff-style proposal plus the same issues list; NEVER suggest commits.
   The user copies anything they want applied into a follow-up turn.
 
-If the environment is Ask mode, do not write files even when the user
-asks you to — emit a proposal they can apply themselves.
+If the environment is Ask mode, NEVER write files even when the user
+asks — emit a proposal they can apply themselves.
 
 ## Auto-apply (Agent mode)
 
@@ -134,12 +134,12 @@ reconciliation that any auditor would make the same way:
 2. **Backlog status drift.** For a `roadmap_ref` whose story file is
    `status: done`, if the matching **Status** cell in `docs/backlog.md`
    still reads `planned` or equivalent, update it to the project's
-   established "done" phrasing. Do not mark **done** in the backlog when
+   established "done" phrasing. NEVER mark **done** in the backlog when
    the story is still `todo` or `in_progress`.
 3. **Queue order vs `depends_on`.** For each id `Q` in *Suggested
    order*, if some prerequisite `d` is not `done` and does not appear
    **above** `Q`: reorder rows minimally until the rule holds, or move
-   `Q` below every unfinished `d`. Prefer moving blocked work **down**
+   `Q` below every unfinished `d`. MUST prefer moving blocked work **down**
    over reshuffling the whole table.
 4. **Flat urgency/impact inversions — narrow scope.** Only when a story
    with `urgency: later` sits above a story with `urgency: now` in the
@@ -153,33 +153,33 @@ reconciliation that any auditor would make the same way:
 
 - **Scale threshold.** If the audit would touch more than **5 story
   files** or reorder more than **half** the *Suggested order* rows,
-  stop and report the full plan first, then wait for the user to
-  confirm. Large changes should be a human decision.
+  MUST stop and report the full plan first, then wait for user
+  confirmation. Large changes MUST be a human decision.
 - **Working-tree awareness.** If the user has uncommitted changes in
   `docs/queue.md`, `docs/backlog.md`, or any story file you would
-  touch, report the planned changes first and let the user decide.
-  Do not overwrite in-progress work.
-- **Commits.** Do not create commits unless the user asks. Describe
+  touch, MUST report the planned changes first and let the user decide.
+  NEVER overwrite in-progress work.
+- **Commits.** NEVER create commits unless the user asks. Describe
   what changed so they can commit in their preferred grouping. When
-  the user does ask to commit, prefer **one commit per file class**
+  the user does ask to commit, MUST prefer **one commit per file class**
   (queue, backlog, stories) over one mega-commit — easier to review
   and revert. If the project uses conventional commits, `docs(queue):`
   / `docs(backlog):` / `docs(stories):` scopes are natural.
 
 ## Stop and report (no edit)
 
-Do not guess through these — list them clearly and let the user decide:
+NEVER guess through these — list them clearly and let the user decide:
 
 - **`depends_on` references an unknown id.** List the offending story
   and the dangling id. Fix only obvious typos that restore a known id
   (e.g. `P0-3` → `P0.3`) and say you did.
-- **Directed cycle.** List the cycle (`A → B → A`). Do not delete edges
-  to break it — the user must choose which edge is wrong.
-- **Duplicate `id`.** Two stories claim the same `id`. Flag; do not
+- **Directed cycle.** List the cycle (`A → B → A`). NEVER delete edges
+  to break it — the user MUST choose which edge is wrong.
+- **Duplicate `id`.** Two stories claim the same `id`. Flag; NEVER
   rename either.
 - **Ambiguous editorial reorder.** Multiple valid orderings satisfy
   the constraints. Summarise the options (e.g. "put P0.2 before P0.5
-  because impact:H, or after because urgency:soon"); do not pick.
+  because impact:H, or after because urgency:soon"); NEVER pick.
 - **Ambiguous scope (monorepo).** No explicit `package:` arg and the
   user's briefing references stories across multiple package roots.
   Ask which scope to audit before proceeding.
@@ -191,8 +191,8 @@ Do not guess through these — list them clearly and let the user decide:
 See `doccraft-story` for the full frontmatter contract. For the audit,
 the fields that matter are:
 
-- `id` — node id in the graph; must be unique across stories.
-- `depends_on` — directed edges. Each entry must match another story's
+- `id` — node id in the graph; MUST be unique across stories.
+- `depends_on` — directed edges. Each entry MUST match another story's
   `id` or an explicit backlog row; unknown ids are errors.
 - `status` — `done` nodes satisfy prerequisites; `todo` / `in_progress`
   nodes remain scheduling candidates.
@@ -222,12 +222,14 @@ documents accepted debt in its Notes column.
 
 1. Parse the *Suggested order* table in `docs/queue.md`. Story links
    and id labels appear in the first column.
-2. For each queued row with id `Q`, every `d` in `depends_on` must
+2. For each queued row with id `Q`, every `d` in `depends_on` MUST
    either be `done` or appear **above** `Q` (or be explicitly
    accepted as parallel work — call that out).
 3. Flag any row whose story is `done` but still listed.
 
 ## Output format
+
+MUST use these five sections in this order:
 
 1. **Summary.** Graph health (ok / issues) and whether auto-apply ran.
 2. **Issues.** Unknown ids, cycles, duplicate ids, queue-order
@@ -237,32 +239,50 @@ documents accepted debt in its Notes column.
    say **None**.
 4. **Remaining proposals.** Subjective reorders, new rows, or
    `depends_on` edges inferred from story bodies but not in YAML —
-   leave here when they are not unambiguous enough for auto-apply.
+   list here when they are not unambiguous enough for auto-apply.
 5. **Exit.** If the graph and queue are clean and the backlog matches
    shipped stories, say so in one line.
 
+### Example output
+
+```
+**Summary:** Graph clean (6 stories, 4 edges, 0 cycles). Auto-apply ran.
+
+**Issues:** None.
+
+**Changes applied:**
+- `docs/queue.md`: removed row 3 (P0.3, status: done); renumbered rows 4–6 → 3–5.
+- `docs/queue.md`: moved P2.1 below P1.4 (unfinished prerequisite P1.4).
+- `docs/backlog.md`: P0.3 Status → "shipped (v0.4.0)".
+
+**Remaining proposals:**
+- P2.5 and P2.6 have equal urgency:soon / impact:M and no dependency edge — consider which to prioritise.
+
+**Exit:** Queue and backlog are now consistent with the dependency graph.
+```
+
 ---
 
-## How to think about the queue
+## Queue ordering rules
 
-When reordering by hand or reviewing an auto-apply, keep these rules
-in mind — they are the implicit contract the skill enforces:
+When reordering or reviewing an auto-apply, these are the rules this
+skill enforces:
 
 1. **Read frontmatter.** For each candidate story, read `impact`,
    `urgency`, `depends_on`. Read story bodies for chains not yet in
    YAML and add `depends_on` when a chain is stable.
-2. **Order.** Higher `urgency` and `impact` usually move up, but
-   `depends_on` can override: prerequisites should be `done` or appear
-   above this story. If `urgency` and `depends_on` disagree,
-   unfinished prerequisites win unless debt is documented.
+2. **Order.** Higher `urgency` and `impact` move up, but `depends_on`
+   overrides: prerequisites MUST be `done` or appear above this story.
+   If `urgency` and `depends_on` disagree, unfinished prerequisites
+   win unless debt is documented.
 3. **Keep stories honest.** If the table order implies new urgency on
-   a story, update the story YAML in the same change — otherwise the
-   table and frontmatter drift apart and the next audit will thrash.
-4. **Backlog.** When a row ships or is dropped, update the **Status**
+   a story, MUST update the story YAML in the same change — otherwise
+   the table and frontmatter drift apart and the next audit will thrash.
+4. **Backlog.** When a row ships or is dropped, MUST update the **Status**
    column for that id in `docs/backlog.md`. New queued items need a
    story file and a row in the backlog's *Story files* table.
 5. **Planned-tier coverage.** Every `planned` row in
-   `docs/backlog.md` should have a matching file under
+   `docs/backlog.md` MUST have a matching file under
    `docs/stories/` and an entry in the *Story files* table.
    Reconcile periodically.
 
@@ -272,10 +292,10 @@ in mind — they are the implicit contract the skill enforces:
 
 Run this only when the user explicitly asks for parallel-ready batches
 ("what can I run in parallel", "parallel waves", "what's unblocked").
-It does not run as part of every audit — it is a second pass.
+NEVER run as part of every audit — this is a separate pass.
 
 **Preconditions.** Run the graph / queue checks first and surface any
-errors before proposing waves. Do not propose waves on top of a broken
+errors before proposing waves. NEVER propose waves on top of a broken
 graph.
 
 **Queue parsing.**
@@ -291,7 +311,7 @@ graph.
 **Readiness.**
 - A prerequisite `d` is satisfied when the story with `id: d` has
   `status: done`. If `d` does not match any story file, treat as
-  blocked and list under Problems — do not assume done.
+  blocked and list under Problems — NEVER assume done.
 - A story is **ready** when `status` is `todo` or `in_progress`,
   every prerequisite is satisfied, and its `id` is in the active
   scope.
@@ -300,7 +320,7 @@ graph.
 - **Intra-batch dependency rule.** No two stories in the same batch
   may share a `depends_on` edge (mutual or one-way).
 - **Lane heuristic.** From `tags`, take the first `area:*`, else
-  `slice:*`, else `lane: misc`. Prefer batches where each lane
+  `slice:*`, else `lane: misc`. MUST prefer batches where each lane
   appears at most once — reduces merge conflicts. If that drops too
   many ready items, note "merge risk: duplicate lane …" and offer a
   smaller batch or a second wave.
@@ -313,7 +333,7 @@ graph.
 **OpenSpec gate.** If the project uses OpenSpec, stories carry
 `openspec: not-needed | recommended | required`:
 
-- `required` — flag prominently. User should complete their OpenSpec
+- `required` — flag prominently. User MUST complete their OpenSpec
   propose flow before heavy implementation. Link `openspec_change`
   when set.
 - `recommended` — one line: "OpenSpec recommended if scope is fuzzy."
@@ -331,10 +351,62 @@ blocked.
 ---
 
 
+## Pre-apply validation
+
+Before applying any change in Agent mode, MUST complete these checks:
+
+1. **All story files read** — scan all `docs/stories/*.md` frontmatter
+   (skip `README.md`) and build the full dependency graph before making
+   any edit. NEVER apply partial fixes from an incomplete graph.
+2. **No directed cycles** — if the graph contains a cycle, stop and
+   report. NEVER break cycles by removing edges.
+3. **No unknown ids** — every `depends_on` entry MUST resolve to an
+   existing story `id` or backlog row. Fix only obvious typos; flag the
+   rest.
+4. **No duplicate ids** — every `id` MUST be unique. If duplicates exist,
+   stop and report. NEVER rename either.
+5. **Scale threshold** — if the planned changes exceed the containment
+   limits (>5 story files or >50% of queue rows), stop and present the
+   full plan. MUST wait for user confirmation before proceeding.
+6. **Working-tree clean** — if uncommitted changes exist in any file you
+   would touch, report the plan and let the user decide. NEVER overwrite.
+
+## Invalid examples (do not use)
+
+- Deleting a `depends_on` edge to break a cycle — NEVER; the user MUST
+  choose which edge is wrong.
+- Renaming a story `id` to resolve a duplicate — NEVER; flag both and
+  let the user decide.
+- Marking a story as `done` in the backlog when its story file is still
+  `todo` or `in_progress` — NEVER; backlog status MUST follow the story
+  file, not lead it.
+- Picking one ordering over another when multiple valid orderings exist —
+  NEVER; list the options and let the user choose.
+- Running parallel-waves analysis on a graph with unresolved errors —
+  NEVER; fix or report graph issues first.
+- Writing files in Ask / read-only mode — NEVER; emit a proposal only.
+- Creating commits without the user explicitly asking — NEVER.
+
+## Done condition
+
+The task is complete when:
+
+- Every story file under `docs/stories/` has been read and its
+  frontmatter parsed into the dependency graph.
+- All graph checks (unknown ids, cycles, duplicates) have been run and
+  either resolved (auto-apply) or reported (stop and report).
+- All queue checks (stale rows, ordering violations, backlog drift)
+  have been run and either resolved or reported.
+- The output follows the five-section format (Summary, Issues, Changes
+  applied, Remaining proposals, Exit).
+- If parallel waves were requested: the wave proposal is appended after
+  the main audit output.
+- No file has been written in Ask / read-only mode.
+
 ## Optional follow-up template
 
 Use when something cannot be auto-fixed (cycles, ambiguous priority)
-or when the user should re-run with narrower scope:
+or when the user wants to re-run with narrower scope:
 
 ```text
 Invoke doccraft-queue-audit.
