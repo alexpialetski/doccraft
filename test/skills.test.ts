@@ -84,7 +84,7 @@ describe('config-schema', () => {
 });
 
 describe('getAvailableSkills', () => {
-  it('returns the six bundled skill templates (no doccraft-business)', async () => {
+  it('returns the seven bundled skill templates (no doccraft-business)', async () => {
     const skills = await getAvailableSkills();
     const names = skills.map((s) => s.name);
     expect(names).toContain('doccraft-story');
@@ -93,6 +93,7 @@ describe('getAvailableSkills', () => {
     expect(names).toContain('doccraft-queue-audit');
     expect(names).toContain('doccraft-config');
     expect(names).toContain('doccraft-update');
+    expect(names).toContain('doccraft-close');
     expect(names).not.toContain('doccraft-business');
   });
 
@@ -274,7 +275,7 @@ describe('installDoccraftSkills (ADR 007 default layout)', () => {
     expect(existsSync(path.join(project, '.cursor/rules/planning-stories.mdc'))).toBe(true);
   });
 
-  it('installs doccraft-config and doccraft-update alongside the original four skills', async () => {
+  it('installs doccraft-config, doccraft-update, and doccraft-close alongside the original four skills', async () => {
     const project = makeTempProject();
     await installDoccraftSkills(project, 'claude');
 
@@ -285,6 +286,7 @@ describe('installDoccraftSkills (ADR 007 default layout)', () => {
       'doccraft-queue-audit',
       'doccraft-config',
       'doccraft-update',
+      'doccraft-close',
     ]) {
       expect(
         existsSync(path.join(project, `.claude/skills/${skill}/SKILL.md`)),
@@ -306,6 +308,7 @@ describe('installSkills', () => {
       'doccraft-queue-audit',
       'doccraft-config',
       'doccraft-update',
+      'doccraft-close',
     ]) {
       const claudePath = path.join(project, `.claude/skills/${skill}/SKILL.md`);
       expect(existsSync(claudePath)).toBe(true);

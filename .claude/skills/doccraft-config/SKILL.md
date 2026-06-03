@@ -320,13 +320,14 @@ validation in Edit mode instead of calling any CLI.
       "properties": {
         "laneFrom": {
           "title": "Lane source tags",
-          "description": "Which frontmatter tag prefixes, in priority order, the audit uses to assign a story to a swimlane. First match wins. `area` is most common; set `slice` first for products that organise primarily by surface.",
+          "description": "Which frontmatter tag prefixes, in priority order, the audit uses to assign a story to a swimlane. First match wins. `area` is most common; set `slice` first for products that organise primarily by surface. `epic` groups the queue by the story `epic:` field (requires an epics extension that defines that field) — set it first to make the milestone/epic roadmap the primary ordering. See ADR 016.",
           "type": "array",
           "items": {
             "type": "string",
             "enum": [
               "area",
-              "slice"
+              "slice",
+              "epic"
             ]
           },
           "examples": [
@@ -336,6 +337,10 @@ validation in Edit mode instead of calling any CLI.
             ],
             [
               "slice",
+              "area"
+            ],
+            [
+              "epic",
               "area"
             ]
           ]
