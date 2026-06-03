@@ -79,7 +79,7 @@ afterEach(() => {
 });
 
 describe('VALID_INJECTION_POINTS', () => {
-  it('declares exactly the ten v1 points (ADR 013)', () => {
+  it('declares exactly the v1 points (ADR 013) plus the close points (ADR 015)', () => {
     expect([...VALID_INJECTION_POINTS]).toEqual([
       'story.frontmatter.fields',
       'story.body.sections',
@@ -91,6 +91,8 @@ describe('VALID_INJECTION_POINTS', () => {
       'queue.artifact-types',
       'session-wrap.artifact-types',
       'session-wrap.instructions',
+      'close.instructions',
+      'close.epic-update',
     ]);
   });
 });

@@ -8,7 +8,7 @@ An npm CLI that installs an opinionated, small set of docs-folder skills
 for Claude Code and Cursor, layered on OpenSpec. On `doccraft init`,
 doccraft first runs `openspec init` as a subprocess (installing OpenSpec's
 own skills and slash commands), then installs its own skills on top.
-Ships four core skills (authored in `templates/skills/`):
+Ships five core skills (authored in `templates/skills/`):
 
 | Skill | Use for |
 |-------|---------|
@@ -16,6 +16,7 @@ Ships four core skills (authored in `templates/skills/`):
 | `doccraft-adr` | Architecture decision records in `docs/adr/` (Nygard-style) |
 | `doccraft-queue-audit` | Reconcile dependency graph + pick-next queue + backlog |
 | `doccraft-session-wrap` | Propose doc artifacts at the end of a design thread |
+| `doccraft-close` | Close a story end-to-end: status → backlog → queue → epic, then reconcile (ADR 015) |
 
 Plus three Cursor rule stubs in `templates/rules/` (`planning-stories.mdc`,
 `planning-adrs.mdc`, `planning-queue.mdc`) that glob-attach when editing

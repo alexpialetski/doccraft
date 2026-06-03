@@ -8,8 +8,9 @@ import yaml from 'js-yaml';
  * are rejected at load time.
  *
  * Per ADR 013: adding a value is a non-breaking change; removing a value is
- * breaking. The four core skills own these points — `doccraft-config` and
+ * breaking. The content skills own these points — `doccraft-config` and
  * `doccraft-update` are infrastructure skills and have no points in v1.
+ * `close.*` added per ADR 015 (the `doccraft-close` skill).
  */
 export const VALID_INJECTION_POINTS = [
   'story.frontmatter.fields',
@@ -22,6 +23,8 @@ export const VALID_INJECTION_POINTS = [
   'queue.artifact-types',
   'session-wrap.artifact-types',
   'session-wrap.instructions',
+  'close.instructions',
+  'close.epic-update',
 ] as const;
 
 export type InjectionPoint = (typeof VALID_INJECTION_POINTS)[number];
@@ -32,6 +35,7 @@ export const INJECTABLE_SKILLS = [
   'doccraft-adr',
   'doccraft-queue-audit',
   'doccraft-session-wrap',
+  'doccraft-close',
 ] as const;
 
 export type InjectableSkill = (typeof INJECTABLE_SKILLS)[number];

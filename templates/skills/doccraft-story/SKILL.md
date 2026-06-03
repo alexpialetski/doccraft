@@ -243,6 +243,24 @@ package's `{{DOCS_DIR}}/stories/`; unprefixed ids always refer to the
 project-root scope. The same namespace rule applies to `adr_refs`
 (unprefixed = root, `<slug>/NNN-slug.md` = package-scoped).
 
+## Cross-reference resolution (path-bearing links)
+
+Per ADR 017, a cross-reference should resolve in **one hop** — opening the
+target should never require globbing a directory to find the file. The
+namespaced id stays the canonical, rename-stable handle; pair it with a path
+so neither readers nor agents pay a search tax:
+
+- **In frontmatter lists** (`depends_on`, `adr_refs`), keep the id form —
+  link syntax in a YAML list is awkward, and the audit resolves these against
+  the **Known package roots** anyway. Ids remain canonical here.
+- **In prose, tables, and Notes** — whenever you *write* a reference a reader
+  or agent will follow (a related-story line, a queue row, an epic table),
+  render it as a markdown link whose text is the id and whose target is the
+  resolvable file path: `[pipeline/P1.30](../services/pipeline/{{DOCS_DIR}}/stories/p1-...md)`.
+- The id is the source of truth; the path is a convenience that the audit
+  (`doccraft-queue-audit`) re-derives from the id and repairs when a file
+  moves — so a stale path is a mechanical fix, not a dead link.
+
 ## Workflow reminders
 
 - Move `status` to `in_progress` when you start implementation; `done` when
