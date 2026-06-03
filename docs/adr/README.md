@@ -27,3 +27,6 @@ explicit Status and supersession).
 | [012](012-story-model-hints-registry.md) | Optional `story.modelHints` path + project-owned registry markdown | Superseded by 013 |
 | [013](013-extension-framework.md) | Extension framework — bake-time injection + scaffold | Accepted |
 | [014](014-monorepo-package-docs.md) | Monorepo support — per-package docs/ with namespaced ids | Accepted |
+| [015](015-doccraft-close-skill.md) | A transactional `doccraft-close` skill (transition + reconcile) | Accepted |
+| [016](016-materialized-aggregate-queue.md) | Materialised cross-package aggregate queue; epic lane; status vocab | Accepted |
+| [017](017-path-bearing-cross-references.md) | Path-bearing cross-references (refines ADR 014 namespaced ids) | Accepted |
